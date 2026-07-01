@@ -1,0 +1,224 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin") // admin | executive
+  createdAt DateTime @default(now())
+}
+
+model Contact {
+  id            String    @id @default(cuid())
+  legacyId      String?
+  vertical      String?
+  status        String    @default("Novo")
+  instagram     String?
+  tiktok        String?
+  linkIg        String?
+  linkTiktok    String?
+  origin        String?   @default("Prospecção própria")
+  contactedBy   String?
+  notes         String?
+  prospectedAt  DateTime?
+  statusChangedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  ambassadorId  String?   @unique
+  ambassador    Ambassador? @relation(fields: [ambassadorId], references: [id])
+}
+
+model Ambassador {
+  id          String   @id @default(cuid())
+  program     String   // OAB | ECJ
+  fullName    String
+  email       String?
+  whatsapp    String?
+  instagram   String
+  tiktok      String?
+  youtube     String?
+  status      String   @default("Pendente")
+  alerts      String?
+  gmailThreadId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contact     Contact?
+  partnership Partnership?
+  monthlyControls MonthlyControl[]
+  monthlyFinances MonthlyFinance[]
+  deliveries  Delivery[]
+  emailLogs   EmailLog[]
+
+  @@unique([program, instagram])
+  @@index([status])
+}
+
+model Partnership {
+  id              String    @id @default(cuid())
+  ambassadorId    String    @unique
+  ambassador      Ambassador @relation(fields: [ambassadorId], references: [id], onDelete: Cascade)
+  modality        String?   // Assinatura + Cupom | Remuneração
+  agreedValue     Float?
+  valueLocked     Boolean   @default(false)
+  courseName      String?
+  courseReleased  Boolean   @default(false)
+  courseReleaseDate DateTime?
+  couponCode      String?
+  metaFeed        Int       @default(0)
+  metaStories     Int       @default(0)
+  metaTiktok      Int       @default(0)
+  metaYoutube     Int       @default(0)
+  startDate       DateTime?
+  endDate         DateTime?
+  proposalSentAt  DateTime?
+  formalizationSentAt DateTime?
+  legalCpf          String?
+  legalAddress      String?
+  bankDetails       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model MonthlyControl {
+  id              String   @id @default(cuid())
+  ambassadorId    String
+  ambassador      Ambassador @relation(fields: [ambassadorId], references: [id], onDelete: Cascade)
+  monthRef        String   // yyyy-MM
+  pctDelivered    Float    @default(0)
+  proofsLink      String?
+  metaFeed        Int      @default(0)
+  deliveredFeed   Int      @default(0)
+  statusFeed      String?
+  metaTiktok      Int      @default(0)
+  deliveredTiktok Int      @default(0)
+  statusTiktok    String?
+  metaYoutube     Int      @default(0)
+  deliveredYoutube Int     @default(0)
+  statusYoutube   String?
+  metaStories     Int      @default(0)
+  deliveredStories Int     @default(0)
+  statusStories   String?
+  metaLocked      Boolean  @default(false)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([ambassadorId, monthRef])
+  @@index([monthRef])
+}
+
+model MonthlyFinance {
+  id                String   @id @default(cuid())
+  ambassadorId      String
+  ambassador        Ambassador @relation(fields: [ambassadorId], references: [id], onDelete: Cascade)
+  monthRef          String
+  paymentStatus     String   @default("Pendente")
+  pctDelivered      Float    @default(0)
+  agreedValue       Float?
+  valueLocked       Boolean  @default(false)
+  amountDue         Float?
+  termLink          String?
+  termDocLink       String?
+  termActivity      String?
+  termSigned        Boolean  @default(false)
+  signedTermLink    String?
+  termSentAt        DateTime?
+  closingSentAt     DateTime?
+  financeFormOk     Boolean  @default(false)
+  paymentSent       Boolean  @default(false)
+  financeSentAt     DateTime?
+  gmailThreadId     String?
+  log               String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([ambassadorId, monthRef])
+  @@index([monthRef])
+  @@index([paymentStatus])
+}
+
+model Delivery {
+  id              String   @id @default(cuid())
+  ambassadorId    String?
+  ambassador      Ambassador? @relation(fields: [ambassadorId], references: [id], onDelete: SetNull)
+  campaignId      String?
+  campaign        Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  monthRef        String?
+  sheetSyncKey    String?  @unique
+  needsReview     Boolean  @default(false)
+  program         String?
+  instagram       String?
+  fullName        String?
+  email           String?
+  deliveryType    String?
+  postedAt        DateTime?
+  submittedAt     DateTime @default(now())
+  postLink        String?
+  printUrl        String?
+  storiesPrintUrl String?
+  videoLink       String?
+  campaignName    String?
+  driveStatus     String?
+  driveOrganizedIn String?
+  campaignDriveStatus String?
+  syncedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([monthRef])
+  @@index([ambassadorId])
+  @@index([needsReview])
+  @@index([program])
+}
+
+model Campaign {
+  id             String    @id @default(cuid())
+  name           String    @unique
+  program        String?   // OAB | ECJ
+  status         String    @default("Inativa") // Ativa | Inativa | Agendada | Encerrada
+  driveFolderUrl String?
+  publicSlug     String?   @unique
+  startDate      DateTime?
+  endDate        DateTime?
+  eventDate      DateTime?
+  pageUrl        String?
+  formLabel      String?
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deliveries     Delivery[]
+
+  @@index([status])
+  @@index([program])
+  @@index([publicSlug])
+}
+
+model EmailLog {
+  id            String   @id @default(cuid())
+  ambassadorId  String?
+  ambassador    Ambassador? @relation(fields: [ambassadorId], references: [id], onDelete: SetNull)
+  emailType     String
+  subject       String?
+  recipient     String?
+  gmailThreadId String?
+  htmlPreview   String?
+  status        String   @default("draft") // draft | sent | failed
+  sentAt        DateTime?
+  createdAt     DateTime @default(now())
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

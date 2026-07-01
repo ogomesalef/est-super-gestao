@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Super Embaixadores — Gestão
 
-## Getting Started
+App local de gestão do programa Super Embaixadores (OAB + ECJ), substituindo a planilha Google Sheets.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 + TypeScript + Tailwind
+- SQLite + Prisma
+- Auth local (dev) + Google OAuth (produção)
+
+## Início rápido
 
 ```bash
+cd est-super-gestao
+cp .env.example .env   # depois cole DATABASE_AUTH_TOKEN do Turso
+npm install
+npm run verify         # testa conexão ao Turso
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra http://localhost:3000 — **mesmo banco** que https://est-super-gestao.vercel.app
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Login padrão:**
+- Admin: `admin@local` / `admin123`
+- Chefe: `chefe@local` / `chefe123`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Módulos
 
-## Learn More
+| Rota | Função |
+|------|--------|
+| `/` | Dashboard |
+| `/contatos` | CRM de prospecção |
+| `/parcerias` | Embaixadores e status |
+| `/entregas` | Metas vs entregas do mês |
+| `/financeiro` | Pagamentos e ações |
+| `/campanhas` | Campanhas de divulgação |
+| `/emails` | Gerador de e-mails |
+| `/executive` | Painel da chefe |
 
-To learn more about Next.js, take a look at the following resources:
+## API compatível com iPhone Shortcuts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`POST /api/contatos` com mesmo payload do Apps Script `api_contatos.js`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentação
 
-## Deploy on Vercel
+Ver pasta `docs/` (13 arquivos). Produção: `docs/13-producao.md`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Integrações
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Apps Script bridge para e-mails: `APPS_SCRIPT_BRIDGE_URL`
+- Google OAuth: `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`
+- Deploy: `docs/11-deploy-gratis.md`
+
+## Projetos relacionados
+
+- `est-appscript/super embaixadores/` — lógica legada
+- `est-supers/` — templates de e-mail ricos

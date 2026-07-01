@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Fechamento {{mesDisplay}} | Super Embaixadores</title>
+  </head>
+
+  <body style="margin:0;padding:0;background:#f5f7fb;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Fechamento de {{mesDisplay}} — Super Embaixadores ({{programa}}).
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f7fb;padding:20px 0;">
+      <tr>
+        <td align="center" style="padding:0 12px;">
+          <table role="presentation" width="640" cellspacing="0" cellpadding="0"
+            style="width:640px;max-width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(20,29,44,.08);">
+
+            <!-- Header -->
+            <tr>
+              <td style="padding:20px 22px;background:{{headerBg}};color:#ffffff;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;opacity:.92;">
+                  Super Embaixadores ({{programa}})
+                </div>
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;line-height:1.25;margin-top:6px;">
+                  Fechamento de {{mesDisplay}}
+                </div>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:22px;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#101828;">
+                  Ola, <strong>{{firstName}}</strong>!
+                  <br /><br />
+                  Segue o fechamento de <strong>{{mesDisplay}}</strong> com o resumo das suas entregas e o detalhamento financeiro.
+                </div>
+
+                <!-- Card: Resumo de Entregas -->
+                <div style="margin-top:18px;padding:16px;border:1px solid #e6eaf2;border-radius:12px;background:#fbfcff;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#111827;margin-bottom:12px;">
+                    Resumo de Entregas
+                  </div>
+
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;">
+                    <thead>
+                      <tr style="background:{{headerBg}};color:#ffffff;">
+                        <th style="padding:9px 12px;text-align:left;font-weight:600;font-family:Arial,Helvetica,sans-serif;border-radius:6px 0 0 0;">Formato</th>
+                        <th style="padding:9px 12px;text-align:center;font-weight:600;font-family:Arial,Helvetica,sans-serif;">Meta</th>
+                        <th style="padding:9px 12px;text-align:center;font-weight:600;font-family:Arial,Helvetica,sans-serif;border-radius:0 6px 0 0;">Realizado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style="background:#ffffff;">
+                        <td style="padding:9px 12px;border-bottom:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#344054;">Feed / Reels</td>
+                        <td style="padding:9px 12px;text-align:center;border-bottom:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{metaFeed}}</td>
+                        <td style="padding:9px 12px;text-align:center;border-bottom:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{entFeed}}</td>
+                      </tr>
+                      <tr style="background:#f9fafb;">
+                        <td style="padding:9px 12px;border-bottom:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#344054;">Sequências de stories</td>
+                        <td style="padding:9px 12px;text-align:center;border-bottom:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{metaStories}}</td>
+                        <td style="padding:9px 12px;text-align:center;border-bottom:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{entStories}}</td>
+                      </tr>
+                      <tr style="background:#ffffff;">
+                        <td style="padding:9px 12px;font-family:Arial,Helvetica,sans-serif;color:#344054;">TikTok</td>
+                        <td style="padding:9px 12px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{metaTk}}</td>
+                        <td style="padding:9px 12px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{entTk}}</td>
+                      </tr>
+                      <tr style="background:#f9fafb;">
+                        <td style="padding:9px 12px;font-family:Arial,Helvetica,sans-serif;color:#344054;">YouTube</td>
+                        <td style="padding:9px 12px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{metaYt}}</td>
+                        <td style="padding:9px 12px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#111827;font-weight:700;">{{entYt}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div style="margin-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#667085;line-height:1.4;">
+                    Cada sequência equivale a 3 stories consecutivos com link
+                    (ex: 4 sequências = 12 stories individuais)
+                  </div>
+
+                  <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#ffffff;border:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#344054;">
+                    Percentual de entregas realizadas: <strong style="color:#111827;">{{percentEntregas}}</strong>
+                  </div>
+                </div>
+
+                <!-- Card: Financeiro -->
+                <div style="margin-top:18px;padding:16px;border:1px solid #e6eaf2;border-radius:12px;background:#fbfcff;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#111827;margin-bottom:12px;">
+                    Financeiro
+                  </div>
+
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;">
+                    <tr style="background:#ffffff;">
+                      <td style="padding:9px 12px;border:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#344054;width:55%;">Valor acordado</td>
+                      <td style="padding:9px 12px;text-align:right;border:1px solid #eef2f7;font-family:Arial,Helvetica,sans-serif;color:#111827;">{{valorAcordado}}</td>
+                    </tr>
+                    <tr style="background:{{headerBg}};">
+                      <td style="padding:10px 12px;font-family:Arial,Helvetica,sans-serif;color:#ffffff;font-weight:700;font-size:15px;">Valor a pagar</td>
+                      <td style="padding:10px 12px;text-align:right;font-family:Arial,Helvetica,sans-serif;color:#ffffff;font-weight:700;font-size:17px;">{{valorAPagar}}</td>
+                    </tr>
+                  </table>
+
+                  <div style="margin-top:10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#667085;line-height:1.5;">
+                    O valor a pagar e calculado proporcionalmente ao percentual de entregas realizadas em relacao as metas do mes.
+                  </div>
+                </div>
+
+                <!-- Card: Termo de Parceria -->
+                <div style="margin-top:18px;padding:16px;border:1px solid #e6eaf2;border-radius:12px;background:#fbfcff;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#111827;margin-bottom:10px;">
+                    Termo de Parceria
+                  </div>
+
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#344054;">
+                    O Termo de Parceria referente a <strong>{{mesDisplay}}</strong> esta disponivel no link abaixo.
+                    Acesse, faca o download, assine digitalmente e nos devolva respondendo a este e-mail.
+                    <br /><br />
+                    <a href="{{linkTermoPdf}}" style="color:{{headerBg}};font-weight:700;text-decoration:none;">
+                      Acessar Termo de Parceria
+                    </a>
+                  </div>
+
+                  <div style="margin-top:12px;padding:10px 14px;border-left:4px solid {{headerBg}};background:#ffffff;border-radius:0 6px 6px 0;border-top:1px solid #eef2f7;border-right:1px solid #eef2f7;border-bottom:1px solid #eef2f7;">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#344054;">
+                      O pagamento sera processado somente apos o recebimento do termo assinado.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Signature -->
+                <div style="margin-top:18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#344054;line-height:1.6;">
+                  Qualquer duvida, responda este e-mail.
+                  <br /><br />
+                  Atenciosamente,<br />
+                  <strong>Equipe Super Embaixadores</strong>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:14px 22px;background:#f8fafc;border-top:1px solid #eef2f7;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#667085;">
+                  Esta mensagem e referente ao Programa Super Embaixadores ({{programa}}).
+                </div>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

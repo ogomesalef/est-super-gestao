@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Formulario Financeiro e Juridico — {{mesDisplay}}</title>
+  </head>
+
+  <body style="margin:0;padding:0;background:#f5f7fb;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Formulario Financeiro e Juridico referente a {{mesDisplay}} — Super Embaixadores ({{programa}}).
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f7fb;padding:20px 0;">
+      <tr>
+        <td align="center" style="padding:0 12px;">
+          <table role="presentation" width="640" cellspacing="0" cellpadding="0"
+            style="width:640px;max-width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(20,29,44,.08);">
+
+            <!-- Header -->
+            <tr>
+              <td style="padding:20px 22px;background:{{headerBg}};color:#ffffff;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;opacity:.92;">
+                  Super Embaixadores ({{programa}})
+                </div>
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;line-height:1.25;margin-top:6px;">
+                  Formulario Financeiro e Juridico
+                </div>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:22px;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#101828;">
+                  Ola, <strong>{{firstName}}</strong>!
+                </div>
+
+                <!-- Card: Explicacao -->
+                <div style="margin-top:18px;padding:16px;border:1px solid #e6eaf2;border-radius:12px;background:#fbfcff;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#111827;margin-bottom:10px;">
+                    Cadastro financeiro e juridico necessario
+                  </div>
+
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#344054;">
+                    Para finalizarmos o pagamento referente a <strong>{{mesDisplay}}</strong>, precisamos que voce preencha o
+                    <strong>Formulario Financeiro e Juridico</strong> do programa.
+                    <br /><br />
+                    Este formulario e necessario para:
+                    <ul style="margin:10px 0 0 18px;padding:0;color:#344054;">
+                      <li style="margin:6px 0;">Cadastrar seus dados bancarios para o pagamento</li>
+                      <li style="margin:6px 0;">Informar os dados juridicos para emissao do contrato</li>
+                      <li style="margin:6px 0;">Garantir que o pagamento chegue na conta correta</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Card: Acao -->
+                <div style="margin-top:18px;padding:16px;border:1px solid #e6eaf2;border-radius:12px;background:#fbfcff;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#111827;margin-bottom:12px;">
+                    Preencher o formulario
+                  </div>
+
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#344054;margin-bottom:14px;">
+                    Clique no link abaixo para acessar e preencher o formulario:
+                  </div>
+
+                  <div style="text-align:center;margin-bottom:14px;">
+                    <a href="{{linkFormFinanceiro}}"
+                       style="display:inline-block;background:{{headerBg}};color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;">
+                      Acessar Formulario Financeiro
+                    </a>
+                  </div>
+
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#667085;">
+                    Link direto: <a href="{{linkFormFinanceiro}}" style="color:{{headerBg}};text-decoration:none;">{{linkFormFinanceiro}}</a>
+                  </div>
+                </div>
+
+                <!-- Card: Aviso -->
+                <div style="margin-top:18px;padding:12px 14px;border-left:4px solid {{headerBg}};background:#ffffff;border-radius:0 12px 12px 0;border-top:1px solid #eef2f7;border-right:1px solid #eef2f7;border-bottom:1px solid #eef2f7;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#344054;">
+                    Apos preencher o formulario, por favor responda este e-mail informando que foi concluido para que possamos dar andamento ao pagamento.
+                  </div>
+                </div>
+
+                <!-- Signature -->
+                <div style="margin-top:18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#344054;line-height:1.6;">
+                  Qualquer duvida, responda este e-mail.
+                  <br /><br />
+                  Atenciosamente,<br />
+                  <strong>Equipe Super Embaixadores</strong>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:14px 22px;background:#f8fafc;border-top:1px solid #eef2f7;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#667085;">
+                  Esta mensagem e referente ao Programa Super Embaixadores ({{programa}}).
+                </div>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
