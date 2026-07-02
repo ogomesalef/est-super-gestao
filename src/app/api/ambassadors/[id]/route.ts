@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { serializeQuickNote } from "@/lib/ambassador-quick-notes";
 
 function serializeDate(d: Date | null | undefined): string | null {
   return d ? d.toISOString() : null;
@@ -13,6 +14,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     include: {
       partnership: true,
       contact: true,
+      quickNotes: {
+        orderBy: [{ completed: "asc" }, { pinned: "desc" }, { createdAt: "desc" }],
+      },
       monthlyControls: { orderBy: { monthRef: "desc" } },
       monthlyFinances: { orderBy: { monthRef: "desc" } },
       deliveries: { orderBy: { postedAt: "desc" }, take: 50 },
@@ -37,6 +41,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     youtube: ambassador.youtube,
     status: ambassador.status,
     alerts: ambassador.alerts,
+    quickNotes: ambassador.quickNotes.map(serializeQuickNote),
     gmailThreadId: ambassador.gmailThreadId,
     createdAt: ambassador.createdAt.toISOString(),
     updatedAt: ambassador.updatedAt.toISOString(),

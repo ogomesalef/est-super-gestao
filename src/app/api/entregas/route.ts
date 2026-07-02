@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isPartnershipActiveInMonth } from "@/lib/utils";
+import { ambassadorOpenQuickNotesQuery, serializeQuickNote } from "@/lib/ambassador-quick-notes";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -12,12 +13,25 @@ export async function GET(req: Request) {
       monthRef,
       ...(program ? { ambassador: { program } } : {}),
     },
-    include: { ambassador: { include: { partnership: true } } },
+    include: {
+      ambassador: {
+        include: {
+          partnership: true,
+          quickNotes: ambassadorOpenQuickNotesQuery,
+        },
+      },
+    },
     orderBy: { ambassador: { fullName: "asc" } },
   });
 
-  const active = controls.filter((c) =>
-    isPartnershipActiveInMonth(c.ambassador.partnership, monthRef)
-  );
+  const active = controls
+    .filter((c) => isPartnershipActiveInMonth(c.ambassador.partnership, monthRef))
+    .map((c) => ({
+      ...c,
+      ambassador: {
+        ...c.ambassador,
+        quickNotes: c.ambassador.quickNotes.map(serializeQuickNote),
+      },
+    }));
   return NextResponse.json(active);
 }

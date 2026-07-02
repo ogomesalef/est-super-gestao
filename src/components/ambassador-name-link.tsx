@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { QuickNoteContextTarget } from "@/components/ambassador/ambassador-quick-notes";
 import { cn } from "@/lib/utils";
 
 export function AmbassadorNameLink({
@@ -8,13 +9,19 @@ export function AmbassadorNameLink({
   children,
   className,
   stopPropagation,
+  onNotesChanged,
+  contextMenu = true,
 }: {
   id: string;
   children: React.ReactNode;
   className?: string;
   stopPropagation?: boolean;
+  onNotesChanged?: () => void;
+  contextMenu?: boolean;
 }) {
-  return (
+  const ambassadorName = typeof children === "string" ? children : "Embaixador";
+
+  const link = (
     <Link
       href={`/embaixadores/${id}`}
       className={cn(
@@ -26,5 +33,18 @@ export function AmbassadorNameLink({
     >
       {children}
     </Link>
+  );
+
+  if (!contextMenu) return link;
+
+  return (
+    <QuickNoteContextTarget
+      ambassadorId={id}
+      ambassadorName={ambassadorName}
+      onChanged={onNotesChanged}
+      className="inline"
+    >
+      {link}
+    </QuickNoteContextTarget>
   );
 }

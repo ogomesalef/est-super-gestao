@@ -1,3 +1,5 @@
+import type { AmbassadorQuickNote } from "@/lib/ambassador-quick-notes";
+
 export type ParceriaPartnership = {
   modality: string | null;
   agreedValue: number | null;
@@ -24,5 +26,6 @@ export type ParceriaItem = {
   instagram: string;
   status: string;
   alerts: string | null;
+  quickNotes?: AmbassadorQuickNote[];
   partnership: ParceriaPartnership | null;
 };

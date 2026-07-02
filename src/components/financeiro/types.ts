@@ -1,3 +1,5 @@
+import type { AmbassadorQuickNote } from "@/lib/ambassador-quick-notes";
+
 export type FinanceiroPartnership = {
   legalCpf: string | null;
   legalAddress: string | null;
@@ -24,5 +26,6 @@ export type FinanceiroRow = {
     program: string;
     email: string | null;
     partnership: FinanceiroPartnership;
+    quickNotes?: AmbassadorQuickNote[];
   };
 };

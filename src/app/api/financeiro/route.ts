@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildTermActivityText } from "@/lib/termo-data";
 import { isPartnershipActiveInMonth } from "@/lib/utils";
+import { ambassadorOpenQuickNotesQuery, serializeQuickNote } from "@/lib/ambassador-quick-notes";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,12 @@ export async function GET(req: Request) {
       ...(program ? { ambassador: { program } } : {}),
     },
     include: {
-      ambassador: { include: { partnership: true } },
+      ambassador: {
+        include: {
+          partnership: true,
+          quickNotes: ambassadorOpenQuickNotesQuery,
+        },
+      },
     },
     orderBy: [{ monthRef: "desc" }, { ambassador: { fullName: "asc" } }],
   });
@@ -37,7 +43,14 @@ export async function GET(req: Request) {
     .map((fin) => {
       const control = controlByKey.get(`${fin.ambassadorId}:${fin.monthRef}`) ?? null;
       const termActivityAuto = buildTermActivityText(fin.monthRef, control);
-      return { ...fin, termActivityAuto };
+      return {
+        ...fin,
+        termActivityAuto,
+        ambassador: {
+          ...fin.ambassador,
+          quickNotes: fin.ambassador.quickNotes.map(serializeQuickNote),
+        },
+      };
     });
 
   return NextResponse.json(enriched);

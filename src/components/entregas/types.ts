@@ -1,3 +1,5 @@
+import type { AmbassadorQuickNote } from "@/lib/ambassador-quick-notes";
+
 export type EntregaControl = {
   id: string;
   monthRef: string;
@@ -12,7 +14,13 @@ export type EntregaControl = {
   deliveredTiktok: number;
   statusTiktok: string | null;
   notes: string | null;
-  ambassador: { id: string; fullName: string; instagram: string; program: string };
+  ambassador: {
+    id: string;
+    fullName: string;
+    instagram: string;
+    program: string;
+    quickNotes?: AmbassadorQuickNote[];
+  };
 };
 
 export const DELIVERY_STATUSES = ["Pendente", "Parcial", "OK"] as const;

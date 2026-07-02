@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeHandle } from "@/lib/utils";
 import { syncMonthlyRowsForAmbassador } from "@/lib/services";
+import { serializeQuickNote } from "@/lib/ambassador-quick-notes";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -13,10 +14,21 @@ export async function GET(req: Request) {
       ...(status ? { status } : {}),
       ...(program ? { program } : {}),
     },
-    include: { partnership: true },
+    include: {
+      partnership: true,
+      quickNotes: {
+        where: { completed: false },
+        orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+      },
+    },
     orderBy: { fullName: "asc" },
   });
-  return NextResponse.json(ambassadors);
+  return NextResponse.json(
+    ambassadors.map((a) => ({
+      ...a,
+      quickNotes: a.quickNotes.map(serializeQuickNote),
+    }))
+  );
 }
 
 export async function POST(req: Request) {

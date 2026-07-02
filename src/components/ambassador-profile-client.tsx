@@ -10,11 +10,14 @@ import { FinanceEmailModal } from "@/components/financeiro/finance-email-modal";
 import { ParceriaCancelamentoModal } from "@/components/parceria-cancelamento-modal";
 import { VerticalBadge } from "@/components/vertical-badge";
 import { NotionPill } from "@/components/views/notion-pill";
+import { QuickNotesFloatingPanel, QuickNoteContextTarget } from "@/components/ambassador/ambassador-quick-notes";
 import type { AmbassadorProfile } from "@/components/ambassador/types";
 import {
   CANCELAMENTO_EMAIL_ACTION,
+  COLLAB_PEDIDO_EMAIL_ACTION,
   EMAIL_ACTIONS,
   FINANCE_ACTIONS,
+  filterAmbassadorEmailActions,
 } from "@/lib/constants";
 import { currentMonthRef, formatMonthRefLong } from "@/lib/utils";
 
@@ -55,6 +58,10 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
   const [couponCode, setCouponCode] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [cancellationMonthRef, setCancellationMonthRef] = useState(currentMonthRef());
+  const [campaignName, setCampaignName] = useState("");
+  const [briefingUrl, setBriefingUrl] = useState("");
+  const [dueDateDisplay, setDueDateDisplay] = useState("");
+  const [videoConcept, setVideoConcept] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSubject, setPreviewSubject] = useState("");
   const [previewHtml, setPreviewHtml] = useState("");
@@ -99,13 +106,9 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
   }, [load]);
 
   const filteredEmailActions = useMemo(() => {
-    if (!profile) return EMAIL_ACTIONS;
+    if (!profile) return [...EMAIL_ACTIONS];
     const mod = profile.partnership?.modality || "Assinatura + Cupom";
-    return EMAIL_ACTIONS.filter((a) => {
-      if (a === CANCELAMENTO_EMAIL_ACTION) return true;
-      if (mod === "Remuneração") return a.includes("Remuneração") || a === "Enviar reprovação";
-      return a.includes("Assinatura + Cupom") || a === "Enviar reprovação";
-    });
+    return filterAmbassadorEmailActions(mod);
   }, [profile]);
 
   useEffect(() => {
@@ -115,6 +118,7 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
   }, [filteredEmailActions, emailAction]);
 
   const isCancelAction = emailAction === CANCELAMENTO_EMAIL_ACTION;
+  const isCollabEmailAction = emailAction === COLLAB_PEDIDO_EMAIL_ACTION;
 
   function emailVars() {
     return {
@@ -123,6 +127,9 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
       releaseDate,
       productValue: profile?.partnership?.agreedValue ?? undefined,
       cancellationMonthRef: isCancelAction ? cancellationMonthRef : undefined,
+      ...(isCollabEmailAction
+        ? { campaignName, briefingUrl, dueDateDisplay, videoConcept }
+        : {}),
     };
   }
 
@@ -289,38 +296,44 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
         </div>
       )}
 
-      <div
-        className="overflow-hidden rounded-xl border border-hairline bg-card shadow-soft"
-        style={{ borderTopWidth: 4, borderTopColor: borderColor }}
+      <QuickNoteContextTarget
+        ambassadorId={profile.id}
+        ambassadorName={profile.fullName}
+        onChanged={load}
       >
-        <div className="p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="font-serif text-2xl text-ink">{profile.fullName}</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">{profile.instagram}</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                <VerticalBadge vertical={profile.program} />
-                <NotionPill kind="status">{profile.status}</NotionPill>
-                {p?.modality && <NotionPill kind="modality">{p.modality}</NotionPill>}
+        <div
+          className="overflow-hidden rounded-xl border border-hairline bg-card shadow-soft"
+          style={{ borderTopWidth: 4, borderTopColor: borderColor }}
+        >
+          <div className="p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h1 className="font-serif text-2xl text-ink">{profile.fullName}</h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">{profile.instagram}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <VerticalBadge vertical={profile.program} />
+                  <NotionPill kind="status">{profile.status}</NotionPill>
+                  {p?.modality && <NotionPill kind="modality">{p.modality}</NotionPill>}
+                </div>
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                {profile.email && (
+                  <a href={`mailto:${profile.email}`} className="block hover:text-primary">
+                    {profile.email}
+                  </a>
+                )}
+                {profile.whatsapp && <p>{profile.whatsapp}</p>}
               </div>
             </div>
-            <div className="text-right text-sm text-muted-foreground">
-              {profile.email && (
-                <a href={`mailto:${profile.email}`} className="block hover:text-primary">
-                  {profile.email}
-                </a>
-              )}
-              {profile.whatsapp && <p>{profile.whatsapp}</p>}
-            </div>
-          </div>
 
-          {profile.alerts && (
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-              {profile.alerts}
-            </p>
-          )}
+            {profile.alerts && (
+              <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                {profile.alerts}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </QuickNoteContextTarget>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Parceria">
@@ -569,14 +582,42 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
             ))}
           </Select>
 
-          {!isCancelAction && (
+          {!isCancelAction && !isCollabEmailAction && (
             <Input
               placeholder="Nome do curso"
               value={courseName}
               onChange={(e) => setCourseName(e.target.value)}
             />
           )}
-          <Input placeholder="Cupom" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+          {!isCollabEmailAction && (
+            <Input placeholder="Cupom" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+          )}
+
+          {isCollabEmailAction && (
+            <>
+              <Input
+                placeholder="Nome da campanha"
+                value={campaignName}
+                onChange={(e) => setCampaignName(e.target.value)}
+              />
+              <Input
+                placeholder="Link do briefing (/p/slug ou URL completa)"
+                value={briefingUrl}
+                onChange={(e) => setBriefingUrl(e.target.value)}
+              />
+              <Input
+                placeholder="Prazo (ex.: 5 de junho)"
+                value={dueDateDisplay}
+                onChange={(e) => setDueDateDisplay(e.target.value)}
+              />
+              <textarea
+                className="min-h-[80px] w-full rounded-md border border-hairline bg-canvas px-3 py-2 text-sm"
+                placeholder="O que pedimos no vídeo"
+                value={videoConcept}
+                onChange={(e) => setVideoConcept(e.target.value)}
+              />
+            </>
+          )}
 
           {isCancelAction && (
             <div>
@@ -594,7 +635,7 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
             </div>
           )}
 
-          {!isCancelAction && (
+          {!isCancelAction && !isCollabEmailAction && (
             <Input
               type="date"
               value={releaseDate}
@@ -678,6 +719,13 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
         sending={!!financeLoading?.endsWith("send")}
         onClose={() => setFinanceEmailModal(null)}
         onSend={confirmFinanceEmail}
+      />
+
+      <QuickNotesFloatingPanel
+        ambassadorId={profile.id}
+        ambassadorName={profile.fullName}
+        notes={profile.quickNotes ?? []}
+        onReload={load}
       />
     </div>
   );

@@ -252,6 +252,7 @@ export function FinanceiroClient() {
     onGenerateTermo: generateTermo,
     onEditTermoData: openTermoModal,
     onEditValue: openValueModal,
+    onNotesChanged: load,
   };
 
   return (

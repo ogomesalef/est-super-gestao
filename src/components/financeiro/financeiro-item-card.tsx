@@ -1,6 +1,10 @@
 "use client";
 
 import { AmbassadorNameLink } from "@/components/ambassador-name-link";
+import {
+  QuickNoteCardBadges,
+  QuickNoteContextTarget,
+} from "@/components/ambassador/ambassador-quick-notes";
 import { VerticalBadge } from "@/components/vertical-badge";
 import { NotionPill } from "@/components/views/notion-pill";
 import { cn } from "@/lib/utils";
@@ -15,6 +19,7 @@ type FinanceiroItemCardProps = {
   onGenerateTermo: (id: string, force?: boolean) => void;
   onEditTermoData: (row: FinanceiroRow) => void;
   onEditValue: (row: FinanceiroRow) => void;
+  onNotesChanged?: () => void;
   className?: string;
   draggable?: boolean;
   dragActive?: boolean;
@@ -34,6 +39,7 @@ export function FinanceiroItemCard({
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onNotesChanged,
   className,
   draggable,
   dragActive,
@@ -50,10 +56,10 @@ export function FinanceiroItemCard({
   }
 
   return (
-    <div
-      draggable={draggable}
-      onDragStart={handleDragStart}
-      onDragEnd={onDragEnd}
+    <QuickNoteContextTarget
+      ambassadorId={row.ambassador.id}
+      ambassadorName={row.ambassador.fullName}
+      onChanged={onNotesChanged}
       className={cn(
         "overflow-hidden rounded-xl border border-hairline bg-white shadow-soft",
         draggable && "cursor-grab active:cursor-grabbing",
@@ -61,12 +67,24 @@ export function FinanceiroItemCard({
         className
       )}
     >
+      <div
+        draggable={draggable}
+        onDragStart={handleDragStart}
+        onDragEnd={onDragEnd}
+      >
       <div className="h-2 w-full" style={{ backgroundColor: programAccent(row.ambassador.program) }} />
       <div className="space-y-3 p-4">
         <div>
-          <AmbassadorNameLink id={row.ambassador.id}>{row.ambassador.fullName}</AmbassadorNameLink>
+          <AmbassadorNameLink
+            id={row.ambassador.id}
+            onNotesChanged={onNotesChanged}
+            contextMenu={false}
+          >
+            {row.ambassador.fullName}
+          </AmbassadorNameLink>
           <p className="text-sm text-muted-foreground">{row.ambassador.instagram}</p>
         </div>
+        <QuickNoteCardBadges notes={row.ambassador.quickNotes} />
         <div className="flex flex-wrap gap-1.5">
           <VerticalBadge vertical={row.ambassador.program} />
           <NotionPill kind="payment">{row.paymentStatus}</NotionPill>
@@ -86,6 +104,7 @@ export function FinanceiroItemCard({
           compact
         />
       </div>
-    </div>
+      </div>
+    </QuickNoteContextTarget>
   );
 }

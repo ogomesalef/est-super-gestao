@@ -104,13 +104,18 @@ export function EntregasClient() {
       />
 
       {activeView.type === "table" && (
-        <EntregasTableView items={filtered} groupBy={activeView.groupBy} onSaveNotes={saveNotes} />
+        <EntregasTableView
+          items={filtered}
+          groupBy={activeView.groupBy}
+          onSaveNotes={saveNotes}
+          onNotesChanged={load}
+        />
       )}
       {activeView.type === "gallery" && (
-        <EntregasGalleryView items={filtered} groupBy={activeView.groupBy} />
+        <EntregasGalleryView items={filtered} groupBy={activeView.groupBy} onNotesChanged={load} />
       )}
       {activeView.type === "board" && (
-        <EntregasBoardView items={filtered} groupBy={activeView.groupBy} />
+        <EntregasBoardView items={filtered} groupBy={activeView.groupBy} onNotesChanged={load} />
       )}
     </div>
   );

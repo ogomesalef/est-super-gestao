@@ -11,6 +11,10 @@ import type { GroupByKey } from "@/lib/view-system/types";
 import { verticalRowClass } from "@/lib/vertical-styles";
 import { cn } from "@/lib/utils";
 import { AmbassadorNameLink } from "@/components/ambassador-name-link";
+import {
+  QuickNoteCardBadges,
+  QuickNoteContextTarget,
+} from "@/components/ambassador/ambassador-quick-notes";
 import { FinanceiroCardActions } from "./financeiro-card-actions";
 import { FinanceiroItemCard } from "./financeiro-item-card";
 import type { FinanceiroRow } from "./types";
@@ -22,6 +26,7 @@ type CardActionProps = {
   onGenerateTermo: (id: string, force?: boolean) => void;
   onEditTermoData: (row: FinanceiroRow) => void;
   onEditValue: (row: FinanceiroRow) => void;
+  onNotesChanged?: () => void;
 };
 
 function getGroupKey(item: FinanceiroRow, groupBy: GroupByKey): string {
@@ -75,6 +80,7 @@ export function FinanceiroTableView({
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onNotesChanged,
 }: {
   items: FinanceiroRow[];
   groupBy: GroupByKey;
@@ -116,15 +122,26 @@ export function FinanceiroTableView({
                   {group.items.map((f) => (
                     <TableRow key={f.id} className={verticalRowClass(f.ambassador.program)}>
                       <Td>
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <AmbassadorNameLink id={f.ambassador.id}>
-                              {f.ambassador.fullName}
-                            </AmbassadorNameLink>
-                            <div className="text-xs text-muted-foreground">{f.ambassador.instagram}</div>
+                        <QuickNoteContextTarget
+                          ambassadorId={f.ambassador.id}
+                          ambassadorName={f.ambassador.fullName}
+                          onChanged={onNotesChanged}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <AmbassadorNameLink
+                                id={f.ambassador.id}
+                                onNotesChanged={onNotesChanged}
+                                contextMenu={false}
+                              >
+                                {f.ambassador.fullName}
+                              </AmbassadorNameLink>
+                              <div className="text-xs text-muted-foreground">{f.ambassador.instagram}</div>
+                              <QuickNoteCardBadges notes={f.ambassador.quickNotes} />
+                            </div>
+                            <VerticalBadge vertical={f.ambassador.program} />
                           </div>
-                          <VerticalBadge vertical={f.ambassador.program} />
-                        </div>
+                        </QuickNoteContextTarget>
                       </Td>
                       <Td className="tabular">{f.pctDelivered.toFixed(0)}%</Td>
                       <Td className="tabular">R$ {f.agreedValue?.toFixed(2) ?? "—"}</Td>
@@ -163,6 +180,7 @@ export function FinanceiroGalleryView({
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onNotesChanged,
   loading,
 }: {
   items: FinanceiroRow[];
@@ -196,6 +214,7 @@ export function FinanceiroGalleryView({
                 onGenerateTermo={onGenerateTermo}
                 onEditTermoData={onEditTermoData}
                 onEditValue={onEditValue}
+                onNotesChanged={onNotesChanged}
               />
             ))}
           </div>
@@ -214,6 +233,7 @@ export function FinanceiroBoardView({
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onNotesChanged,
   loading,
 }: {
   items: FinanceiroRow[];
@@ -264,6 +284,7 @@ export function FinanceiroBoardView({
                 onGenerateTermo={onGenerateTermo}
                 onEditTermoData={onEditTermoData}
                 onEditValue={onEditValue}
+                onNotesChanged={onNotesChanged}
                 draggable={effectiveGroupBy === "status"}
                 dragActive={dragId === f.id}
                 onDragStart={(e) => {

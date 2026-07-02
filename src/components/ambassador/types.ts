@@ -81,6 +81,7 @@ export type AmbassadorProfile = {
   youtube: string | null;
   status: string;
   alerts: string | null;
+  quickNotes: import("@/lib/ambassador-quick-notes").AmbassadorQuickNote[];
   createdAt: string;
   partnership: AmbassadorPartnership | null;
   contact: { id: string; status: string; origin: string | null; notes: string | null } | null;

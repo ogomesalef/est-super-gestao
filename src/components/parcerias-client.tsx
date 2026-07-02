@@ -13,6 +13,7 @@ import {
   ParceriasGalleryView,
   ParceriasTableView,
 } from "@/components/parcerias/parcerias-views";
+import { QuickNotesInlinePanel } from "@/components/ambassador/ambassador-quick-notes";
 import type { ParceriaItem, ParceriaPartnership } from "@/components/parcerias/types";
 
 const emptyPartnership = (): ParceriaPartnership => ({
@@ -198,6 +199,7 @@ export function ParceriasClient() {
           onEdit={openEdit}
           onActivate={(id) => updateStatus(id, "Ativo")}
           onEncerrar={encerrar}
+          onNotesChanged={load}
         />
       )}
       {activeView.type === "gallery" && (
@@ -205,6 +207,7 @@ export function ParceriasClient() {
           items={filtered}
           groupBy={activeView.groupBy}
           onEdit={openEdit}
+          onNotesChanged={load}
         />
       )}
       {activeView.type === "board" && (
@@ -213,6 +216,7 @@ export function ParceriasClient() {
           groupBy={activeView.groupBy}
           onEdit={openEdit}
           onMove={handleBoardMove}
+          onNotesChanged={load}
         />
       )}
 
@@ -387,6 +391,12 @@ export function ParceriasClient() {
                 rows={3}
                 value={form.alerts || ""}
                 onChange={(e) => setForm({ ...form, alerts: e.target.value || null })}
+              />
+
+              <QuickNotesInlinePanel
+                ambassadorId={form.id}
+                ambassadorName={form.fullName}
+                onChanged={load}
               />
             </div>
 

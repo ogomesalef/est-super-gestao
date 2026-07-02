@@ -10,6 +10,10 @@ import type { GroupByKey } from "@/lib/view-system/types";
 import { verticalRowClass } from "@/lib/vertical-styles";
 import { cn } from "@/lib/utils";
 import { AmbassadorNameLink } from "@/components/ambassador-name-link";
+import {
+  QuickNoteCardBadges,
+  QuickNoteContextTarget,
+} from "@/components/ambassador/ambassador-quick-notes";
 import { DELIVERY_STATUSES, deliveryStatus, type EntregaControl } from "./types";
 
 function getGroupKey(item: EntregaControl, groupBy: GroupByKey): string {
@@ -77,10 +81,12 @@ export function EntregasTableView({
   items,
   groupBy,
   onSaveNotes,
+  onNotesChanged,
 }: {
   items: EntregaControl[];
   groupBy: GroupByKey;
   onSaveNotes: (id: string, notes: string) => void;
+  onNotesChanged?: () => void;
 }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const groups =
@@ -121,9 +127,20 @@ export function EntregasTableView({
                   {group.items.map((c) => (
                     <TableRow key={c.id} className={verticalRowClass(c.ambassador.program)}>
                       <Td>
-                        <AmbassadorNameLink id={c.ambassador.id}>
-                          {c.ambassador.fullName}
-                        </AmbassadorNameLink>
+                        <QuickNoteContextTarget
+                          ambassadorId={c.ambassador.id}
+                          ambassadorName={c.ambassador.fullName}
+                          onChanged={onNotesChanged}
+                        >
+                          <AmbassadorNameLink
+                            id={c.ambassador.id}
+                            onNotesChanged={onNotesChanged}
+                            contextMenu={false}
+                          >
+                            {c.ambassador.fullName}
+                          </AmbassadorNameLink>
+                          <QuickNoteCardBadges notes={c.ambassador.quickNotes} />
+                        </QuickNoteContextTarget>
                       </Td>
                       <Td className="text-muted-foreground">{c.ambassador.instagram}</Td>
                       <Td>
@@ -169,9 +186,11 @@ export function EntregasTableView({
 export function EntregasGalleryView({
   items,
   groupBy,
+  onNotesChanged,
 }: {
   items: EntregaControl[];
   groupBy: GroupByKey;
+  onNotesChanged?: () => void;
 }) {
   const groups =
     groupBy === "none"
@@ -192,31 +211,39 @@ export function EntregasGalleryView({
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {group.items.map((c) => (
-              <div
+              <QuickNoteContextTarget
                 key={c.id}
-                className="overflow-hidden rounded-xl border border-hairline bg-white shadow-soft"
+                ambassadorId={c.ambassador.id}
+                ambassadorName={c.ambassador.fullName}
+                onChanged={onNotesChanged}
               >
-                <div
-                  className="h-2 w-full"
-                  style={{ backgroundColor: c.ambassador.program === "ECJ" ? "#D08C00" : "#6B0A09" }}
-                />
-                <div className="space-y-3 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <AmbassadorNameLink id={c.ambassador.id}>
-                        {c.ambassador.fullName}
-                      </AmbassadorNameLink>
-                      <p className="text-sm text-muted-foreground">{c.ambassador.instagram}</p>
+                <div className="overflow-hidden rounded-xl border border-hairline bg-white shadow-soft">
+                  <div
+                    className="h-2 w-full"
+                    style={{ backgroundColor: c.ambassador.program === "ECJ" ? "#D08C00" : "#6B0A09" }}
+                  />
+                  <div className="space-y-3 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <AmbassadorNameLink
+                          id={c.ambassador.id}
+                          onNotesChanged={onNotesChanged}
+                          contextMenu={false}
+                        >
+                          {c.ambassador.fullName}
+                        </AmbassadorNameLink>
+                        <p className="text-sm text-muted-foreground">{c.ambassador.instagram}</p>
+                      </div>
+                      <VerticalBadge vertical={c.ambassador.program} className="shrink-0 scale-90" />
                     </div>
-                    <VerticalBadge vertical={c.ambassador.program} className="shrink-0 scale-90" />
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <NotionPill kind="status">{deliveryStatus(c)}</NotionPill>
-                    <span className="rounded bg-surface px-2 py-0.5 text-xs font-medium tabular text-body">
-                      {c.pctDelivered.toFixed(0)}%
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap gap-1.5">
+                      <NotionPill kind="status">{deliveryStatus(c)}</NotionPill>
+                      <span className="rounded bg-surface px-2 py-0.5 text-xs font-medium tabular text-body">
+                        {c.pctDelivered.toFixed(0)}%
+                      </span>
+                    </div>
+                    <QuickNoteCardBadges notes={c.ambassador.quickNotes} />
+                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                     <div>
                       <p className="font-medium text-ink">Feed</p>
                       {c.deliveredFeed}/{c.metaFeed}
@@ -233,6 +260,7 @@ export function EntregasGalleryView({
                   {c.notes && <p className="line-clamp-2 text-xs text-muted-foreground">{c.notes}</p>}
                 </div>
               </div>
+              </QuickNoteContextTarget>
             ))}
           </div>
         </div>
@@ -244,9 +272,11 @@ export function EntregasGalleryView({
 export function EntregasBoardView({
   items,
   groupBy,
+  onNotesChanged,
 }: {
   items: EntregaControl[];
   groupBy: GroupByKey;
+  onNotesChanged?: () => void;
 }) {
   const effectiveGroupBy = groupBy === "none" ? "status" : groupBy;
   const groups = groupItems(
@@ -272,19 +302,25 @@ export function EntregasBoardView({
           </div>
           <div className="min-h-[120px] space-y-2">
             {group.items.map((c) => (
-              <div
+              <QuickNoteContextTarget
                 key={c.id}
-                className="rounded-lg border border-hairline bg-white p-3 shadow-soft"
+                ambassadorId={c.ambassador.id}
+                ambassadorName={c.ambassador.fullName}
+                onChanged={onNotesChanged}
               >
-                <AmbassadorNameLink
-                  id={c.ambassador.id}
-                  className="truncate text-sm"
-                  stopPropagation
-                >
-                  {c.ambassador.fullName}
-                </AmbassadorNameLink>
-                <p className="truncate text-xs text-muted-foreground">{c.ambassador.instagram}</p>
-                <div className="mt-2 flex flex-wrap gap-1">
+                <div className="rounded-lg border border-hairline bg-white p-3 shadow-soft">
+                  <AmbassadorNameLink
+                    id={c.ambassador.id}
+                    className="truncate text-sm"
+                    stopPropagation
+                    onNotesChanged={onNotesChanged}
+                    contextMenu={false}
+                  >
+                    {c.ambassador.fullName}
+                  </AmbassadorNameLink>
+                  <p className="truncate text-xs text-muted-foreground">{c.ambassador.instagram}</p>
+                  <QuickNoteCardBadges notes={c.ambassador.quickNotes} />
+                  <div className="mt-2 flex flex-wrap gap-1">
                   <span className="rounded bg-surface px-1.5 py-0.5 text-xs tabular">
                     {c.pctDelivered.toFixed(0)}%
                   </span>
@@ -296,6 +332,7 @@ export function EntregasBoardView({
                   </Badge>
                 </div>
               </div>
+              </QuickNoteContextTarget>
             ))}
           </div>
         </div>

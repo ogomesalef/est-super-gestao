@@ -58,9 +58,26 @@ model Ambassador {
   monthlyFinances MonthlyFinance[]
   deliveries  Delivery[]
   emailLogs   EmailLog[]
+  collabAssignments CampaignCollabAssignment[]
+  quickNotes        AmbassadorQuickNote[]
 
   @@unique([program, instagram])
   @@index([status])
+}
+
+model AmbassadorQuickNote {
+  id           String     @id @default(cuid())
+  ambassadorId String
+  ambassador   Ambassador @relation(fields: [ambassadorId], references: [id], onDelete: Cascade)
+  text         String
+  pinned       Boolean    @default(false)
+  completed    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  completedAt  DateTime?
+
+  @@index([ambassadorId])
+  @@index([ambassadorId, pinned])
+  @@index([ambassadorId, completed])
 }
 
 model Partnership {
@@ -197,10 +214,66 @@ model Campaign {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deliveries     Delivery[]
+  collab         CampaignCollab?
 
   @@index([status])
   @@index([program])
   @@index([publicSlug])
+}
+
+model CampaignCollab {
+  id             String   @id @default(cuid())
+  campaignId     String   @unique
+  campaign       Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title          String?
+  videoUrl       String
+  notes          String?
+  driveFolderUrl String?
+  driveInboxUrl  String?
+  driveFolderName String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  assignments    CampaignCollabAssignment[]
+}
+
+model CampaignCollabAssignment {
+  id             String         @id @default(cuid())
+  collabId       String
+  collab         CampaignCollab @relation(fields: [collabId], references: [id], onDelete: Cascade)
+  ambassadorId   String
+  ambassador     Ambassador     @relation(fields: [ambassadorId], references: [id], onDelete: Cascade)
+  publicSlug     String?        @unique
+  driveFolderUrl String?
+  driveVideoUrl  String?
+  driveUploadPublic Boolean     @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  requests       CampaignCollabRequest[]
+
+  @@unique([collabId, ambassadorId])
+  @@index([ambassadorId])
+}
+
+model CampaignCollabRequest {
+  id               String   @id @default(cuid())
+  assignmentId     String
+  assignment       CampaignCollabAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  sortOrder        Int      @default(0)
+  title            String
+  status           String   @default("open") // open | completed
+  introText        String?
+  scriptMarkdown   String?
+  videoDueDate     DateTime?
+  publishDueDate   DateTime?
+  completedVideoUrl String?
+  driveFolderUrl   String?
+  driveShareEmail  String?
+  driveSharePermissionId String?
+  driveEditorShared Boolean @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([assignmentId])
 }
 
 model EmailLog {
