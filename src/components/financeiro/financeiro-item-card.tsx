@@ -6,10 +6,10 @@ import {
   QuickNoteContextTarget,
 } from "@/components/ambassador/ambassador-quick-notes";
 import { VerticalBadge } from "@/components/vertical-badge";
-import { NotionPill } from "@/components/views/notion-pill";
 import { cn } from "@/lib/utils";
 import { FinanceiroCardActions } from "./financeiro-card-actions";
 import type { FinanceiroRow } from "./types";
+import { displayName } from "@/lib/ambassador-name";
 
 type FinanceiroItemCardProps = {
   row: FinanceiroRow;
@@ -19,12 +19,14 @@ type FinanceiroItemCardProps = {
   onGenerateTermo: (id: string, force?: boolean) => void;
   onEditTermoData: (row: FinanceiroRow) => void;
   onEditValue: (row: FinanceiroRow) => void;
+  onUploadSignedTermo?: (id: string, file: File) => void;
   onNotesChanged?: () => void;
   className?: string;
   draggable?: boolean;
   dragActive?: boolean;
   onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragEnd?: () => void;
+  highlightFinanceRequest?: boolean;
 };
 
 function programAccent(program: string): string {
@@ -39,12 +41,14 @@ export function FinanceiroItemCard({
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onUploadSignedTermo,
   onNotesChanged,
   className,
   draggable,
   dragActive,
   onDragStart,
   onDragEnd,
+  highlightFinanceRequest,
 }: FinanceiroItemCardProps) {
   function handleDragStart(e: React.DragEvent<HTMLDivElement>) {
     const target = e.target as HTMLElement;
@@ -58,7 +62,7 @@ export function FinanceiroItemCard({
   return (
     <QuickNoteContextTarget
       ambassadorId={row.ambassador.id}
-      ambassadorName={row.ambassador.fullName}
+      ambassadorName={displayName(row.ambassador)}
       onChanged={onNotesChanged}
       className={cn(
         "overflow-hidden rounded-xl border border-hairline bg-white shadow-soft",
@@ -67,43 +71,40 @@ export function FinanceiroItemCard({
         className
       )}
     >
-      <div
-        draggable={draggable}
-        onDragStart={handleDragStart}
-        onDragEnd={onDragEnd}
-      >
-      <div className="h-2 w-full" style={{ backgroundColor: programAccent(row.ambassador.program) }} />
-      <div className="space-y-3 p-4">
-        <div>
-          <AmbassadorNameLink
-            id={row.ambassador.id}
-            onNotesChanged={onNotesChanged}
-            contextMenu={false}
-          >
-            {row.ambassador.fullName}
-          </AmbassadorNameLink>
-          <p className="text-sm text-muted-foreground">{row.ambassador.instagram}</p>
+      <div draggable={draggable} onDragStart={handleDragStart} onDragEnd={onDragEnd}>
+        <div className="h-1 w-full" style={{ backgroundColor: programAccent(row.ambassador.program) }} />
+        <div className="space-y-2.5 p-3.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <AmbassadorNameLink
+                id={row.ambassador.id}
+                onNotesChanged={onNotesChanged}
+                contextMenu={false}
+                className="text-sm font-semibold leading-snug"
+              >
+                {displayName(row.ambassador)}
+              </AmbassadorNameLink>
+              <p className="truncate text-xs text-muted-foreground">{row.ambassador.instagram}</p>
+            </div>
+            <VerticalBadge vertical={row.ambassador.program} />
+          </div>
+
+          <QuickNoteCardBadges notes={row.ambassador.quickNotes} />
+
+          <FinanceiroCardActions
+            row={row}
+            loading={loading}
+            onAction={onAction}
+            onEmailAction={onEmailAction}
+            onGenerateTermo={onGenerateTermo}
+            onEditTermoData={onEditTermoData}
+            onEditValue={onEditValue}
+            onUploadSignedTermo={onUploadSignedTermo}
+            highlightFinanceRequest={highlightFinanceRequest}
+            compact
+            showPaymentStatus={false}
+          />
         </div>
-        <QuickNoteCardBadges notes={row.ambassador.quickNotes} />
-        <div className="flex flex-wrap gap-1.5">
-          <VerticalBadge vertical={row.ambassador.program} />
-          <NotionPill kind="payment">{row.paymentStatus}</NotionPill>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">{row.pctDelivered.toFixed(0)}% entregas</span>
-          <span className="font-medium tabular text-ink">R$ {row.amountDue?.toFixed(2) ?? "—"}</span>
-        </div>
-        <FinanceiroCardActions
-          row={row}
-          loading={loading}
-          onAction={onAction}
-          onEmailAction={onEmailAction}
-          onGenerateTermo={onGenerateTermo}
-          onEditTermoData={onEditTermoData}
-          onEditValue={onEditValue}
-          compact
-        />
-      </div>
       </div>
     </QuickNoteContextTarget>
   );

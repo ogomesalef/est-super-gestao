@@ -12,6 +12,8 @@ export type ParceriaPartnership = {
   metaTiktok: number;
   metaYoutube: number;
   startDate: string | null;
+  proposalSentAt: string | null;
+  proposalReminderSentAt: string | null;
   legalCpf: string | null;
   legalAddress: string | null;
   bankDetails: string | null;
@@ -21,11 +23,19 @@ export type ParceriaItem = {
   id: string;
   program: string;
   fullName: string;
+  socialName: string | null;
   email: string | null;
   whatsapp: string | null;
   instagram: string;
   status: string;
+  source: string | null;
+  applicationReceivedAt: string | null;
+  applicationFormData: Record<string, string> | null;
+  respostasSheetName: string | null;
+  respostasSheetRow: number | null;
+  needsReview: boolean;
   alerts: string | null;
   quickNotes?: AmbassadorQuickNote[];
   partnership: ParceriaPartnership | null;
+  contact?: { id: string } | null;
 };

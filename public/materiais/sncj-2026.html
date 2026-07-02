@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNCJ 2026 · Documento Analítico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0C10; --ink-2:#0F1218; --ink-3:#141923; --ink-4:#1B212D;
+    --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.17);
+    --fg:#ECEAE2; --fg-dim:#A7A49B; --fg-faint:#6C6960;
+    --gold:#E6B23E; --gold-2:#F5D88E; --volt:#C2F24A; --volt-2:#DBFF82; --blue:#9fd0ff;
+    --maxw:1120px;
+    --serif:"Fraunces",Georgia,serif; --sans:"Archivo",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--ink);color:var(--fg);font-family:var(--sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(60vw 50vw at 8% -8%,rgba(230,178,62,.10),transparent 60%),radial-gradient(55vw 50vw at 100% 108%,rgba(194,242,74,.07),transparent 60%),radial-gradient(40vw 40vw at 92% 4%,rgba(230,178,62,.05),transparent 60%)}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E")}
+  .wrap{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 28px}
+  .topbar{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:16px;max-width:var(--maxw);margin:0 auto;padding:22px 28px;font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-dim)}
+  .topbar .brand{display:flex;align-items:center;gap:11px;color:var(--fg)}
+  .topbar .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 14px 1px rgba(230,178,62,.7)}
+  .topbar .right{color:var(--fg-faint)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:11px;margin-bottom:26px}
+  .eyebrow::before{content:"";width:30px;height:1px;background:var(--gold);display:inline-block}
+  .hero{padding:70px 0 64px;position:relative}
+  .hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(2.9rem,7.4vw,6.1rem);line-height:.99;letter-spacing:-.018em;margin-bottom:30px}
+  .hero h1 .it{font-style:italic;font-weight:500;color:var(--gold-2)}
+  .hero .lede{font-size:clamp(1.15rem,2.1vw,1.5rem);color:var(--fg-dim);max-width:740px;line-height:1.5;font-weight:400}
+  .hero .lede b{color:var(--fg);font-weight:600}
+  .hero .metarow{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:42px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--fg-faint);border-top:1px solid var(--line);padding-top:22px}
+  .hero .metarow span b{color:var(--fg-dim);font-weight:500}
+  .manifesto{margin-top:54px;padding:34px 34px 34px 38px;border-left:3px solid var(--gold);background:linear-gradient(100deg,rgba(230,178,62,.08),rgba(230,178,62,0) 70%);border-radius:0 14px 14px 0}
+  .manifesto .tag{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+  .manifesto p{font-family:var(--serif);font-size:clamp(1.4rem,3vw,2.05rem);line-height:1.28;font-weight:500}
+  .manifesto p .strike{text-decoration:line-through;text-decoration-color:rgba(236,234,226,.35);color:var(--fg-dim)}
+  .manifesto p .hit{color:var(--volt-2);font-style:italic}
+  .toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;margin-top:60px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .toc a{background:var(--ink-2);padding:16px 18px;text-decoration:none;color:var(--fg-dim);font-family:var(--mono);font-size:12px;letter-spacing:.04em;transition:.25s;display:block}
+  .toc a .n{color:var(--gold);display:block;margin-bottom:5px;font-size:11px}
+  .toc a:hover{background:var(--ink-3);color:var(--fg)}
+  section{padding:86px 0;border-top:1px solid var(--line);position:relative}
+  .sec-head{display:flex;align-items:baseline;gap:22px;margin-bottom:40px;flex-wrap:wrap}
+  .sec-num{font-family:var(--mono);font-size:13px;color:var(--gold);letter-spacing:.1em;padding-top:6px}
+  .sec-title{font-family:var(--serif);font-weight:600;font-size:clamp(1.9rem,4.2vw,3rem);line-height:1.04;letter-spacing:-.01em;flex:1;min-width:280px}
+  .sec-kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;display:block}
+  p.body{color:var(--fg-dim);max-width:760px;margin-bottom:18px;font-size:1.02rem}
+  p.body b{color:var(--fg);font-weight:600}
+  p.body .gold{color:var(--gold-2);font-weight:600}
+  .lead-para{font-family:var(--serif);font-size:clamp(1.25rem,2.4vw,1.6rem);line-height:1.42;color:var(--fg);max-width:820px;margin-bottom:30px;font-weight:400}
+  .lead-para em{color:var(--gold-2);font-style:italic}
+  .cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}
+  .ctx{background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:26px 24px;position:relative;overflow:hidden}
+  .ctx .lab{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px}
+  .ctx h4{font-family:var(--serif);font-size:1.28rem;font-weight:600;margin-bottom:10px;line-height:1.18}
+  .ctx.now h4{color:var(--fg)} .ctx.gap h4{color:var(--gold-2)} .ctx.shift h4{color:var(--volt-2)}
+  .ctx p{font-size:.95rem;color:var(--fg-dim);line-height:1.55}
+  .ctx .bartop{position:absolute;top:0;left:0;right:0;height:3px}
+  .ctx.now .bartop{background:var(--fg-faint)} .ctx.gap .bartop{background:var(--gold)} .ctx.shift .bartop{background:var(--volt)}
+  .bigidea{background:radial-gradient(120% 140% at 0% 0%,rgba(230,178,62,.13),transparent 55%),var(--ink-2);border:1px solid var(--line-strong);border-radius:20px;padding:46px 44px;margin-top:14px;position:relative;overflow:hidden}
+  .bigidea .q{font-family:var(--serif);font-weight:600;font-size:clamp(1.6rem,3.5vw,2.5rem);line-height:1.22;letter-spacing:-.01em}
+  .bigidea .q .u{color:var(--gold-2)}
+  .bigidea .sub{margin-top:20px;color:var(--fg-dim);font-size:1.02rem;max-width:780px}
+  .bigidea .sub b{color:var(--fg)}
+  .careers{display:flex;flex-wrap:wrap;gap:9px;margin-top:26px}
+  .chipc{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold-2);border:1px solid rgba(230,178,62,.35);background:rgba(230,178,62,.06);padding:7px 13px;border-radius:999px}
+  .engines{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px}
+  .engine{background:var(--ink-2);border:1px solid var(--line);border-radius:16px;padding:30px 26px;position:relative;transition:.3s;overflow:hidden}
+  .engine:hover{border-color:var(--line-strong);transform:translateY(-4px)}
+  .engine .en{font-family:var(--mono);font-size:12px;color:var(--fg-faint);letter-spacing:.1em}
+  .engine h3{font-family:var(--serif);font-size:1.5rem;font-weight:700;margin:8px 0 4px;line-height:1.08}
+  .engine .role{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:16px}
+  .engine p{font-size:.95rem;color:var(--fg-dim);line-height:1.55}
+  .engine.e1{background:linear-gradient(160deg,rgba(194,242,74,.09),transparent 60%),var(--ink-2)}
+  .engine.e1 h3,.engine.e1 .role{color:var(--volt-2)}
+  .engine.e2{background:linear-gradient(160deg,rgba(159,208,255,.09),transparent 60%),var(--ink-2)}
+  .engine.e2 h3,.engine.e2 .role{color:var(--blue)}
+  .engine.e3{background:linear-gradient(160deg,rgba(230,178,62,.10),transparent 60%),var(--ink-2)}
+  .engine.e3 h3,.engine.e3 .role{color:var(--gold-2)}
+  .grouphead{display:flex;align-items:center;gap:16px;margin:6px 0 22px}
+  .grouphead .gtag{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);background:var(--gold);padding:6px 12px;border-radius:6px;font-weight:600}
+  .grouphead.volt .gtag{background:var(--volt);color:#1a2400}
+  .grouphead h3{font-family:var(--serif);font-size:1.45rem;font-weight:600}
+  .grouphead .ln{flex:1;height:1px;background:var(--line)}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:14px}
+  .card{background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:24px 24px 22px;position:relative;transition:.28s}
+  .card:hover{border-color:var(--line-strong);background:var(--ink-3)}
+  .card .ci{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.08em}
+  .card h4{font-family:var(--serif);font-size:1.24rem;font-weight:600;margin:7px 0 10px;line-height:1.16}
+  .card p{font-size:.93rem;color:var(--fg-dim);line-height:1.55;margin-bottom:14px}
+  .tags{display:flex;flex-wrap:wrap;gap:7px}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:4px 9px;border-radius:5px;border:1px solid var(--line-strong);color:var(--fg-dim)}
+  .tag.eng{color:#1a2400;background:var(--volt);border-color:transparent;font-weight:600}
+  .tag.val{color:var(--ink);background:var(--gold);border-color:transparent;font-weight:600}
+  .tag.per{color:var(--blue);border-color:rgba(159,208,255,.4)}
+  .tag.car{color:var(--fg-faint)}
+  .card.spot{background:linear-gradient(155deg,rgba(194,242,74,.08),transparent 55%),var(--ink-3);border-color:rgba(194,242,74,.25)}
+  .card.gold{background:linear-gradient(155deg,rgba(230,178,62,.09),transparent 55%),var(--ink-3);border-color:rgba(230,178,62,.28)}
+  .span2{grid-column:1 / -1}
+  .points{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+  .points .ptitle{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
+  .points .ptitle b{color:var(--volt-2);font-size:13px}
+  .pbar{display:flex;height:38px;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+  .pbar div{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:#0c1004;font-weight:600}
+  .pbar .s1{background:var(--volt);flex:40} .pbar .s2{background:var(--gold);flex:25} .pbar .s3{background:var(--blue);flex:35}
+  .plegend{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--fg-dim)}
+  .plegend span{display:flex;align-items:center;gap:7px} .plegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .pnote{margin-top:12px;font-size:.85rem;color:var(--fg-faint);font-style:italic}
+  .timeline{margin-top:30px;border-left:2px solid var(--line)}
+  .tl-item{position:relative;padding:0 0 30px 34px}
+  .tl-item::before{content:"";position:absolute;left:-7px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid var(--gold)}
+  .tl-item.fin::before{background:var(--volt);border-color:var(--volt);box-shadow:0 0 16px 2px rgba(194,242,74,.5)}
+  .tl-item .ph{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+  .tl-item h4{font-family:var(--serif);font-size:1.3rem;font-weight:600;margin-bottom:7px}
+  .tl-item.fin h4{color:var(--volt-2)}
+  .tl-item p{font-size:.95rem;color:var(--fg-dim);max-width:720px;line-height:1.55}
+  .why{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:30px}
+  .why .w{background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .why .w .k{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--volt-2);margin-bottom:10px;display:flex;align-items:center;gap:9px}
+  .why .w .k::before{content:"";width:7px;height:7px;background:var(--volt);border-radius:50%}
+  .why .w h4{font-family:var(--serif);font-size:1.18rem;font-weight:600;margin-bottom:8px}
+  .why .w p{font-size:.93rem;color:var(--fg-dim);line-height:1.55}
+  .commercial{margin-top:34px;background:linear-gradient(110deg,rgba(230,178,62,.10),transparent 60%),var(--ink-2);border:1px solid var(--line-strong);border-radius:18px;padding:34px 32px}
+  .commercial h4{font-family:var(--serif);font-size:1.4rem;font-weight:600;margin-bottom:12px;color:var(--gold-2)}
+  .commercial p{color:var(--fg-dim);max-width:820px}
+  .commercial p b{color:var(--fg)}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:30px}
+  .kpiblock{background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:26px}
+  .kpiblock .h{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .kpiblock.eng .h{color:var(--volt-2)} .kpiblock.biz .h{color:var(--gold-2)}
+  .kpiblock ul{list-style:none}
+  .kpiblock li{font-size:.94rem;color:var(--fg-dim);padding:8px 0 8px 22px;position:relative;line-height:1.5}
+  .kpiblock li::before{content:"";position:absolute;left:0;top:14px;width:9px;height:2px;background:var(--gold)}
+  .kpiblock.eng li::before{background:var(--volt)}
+  .kpiblock li b{color:var(--fg);font-weight:600}
+  .steps{counter-reset:s;margin-top:26px}
+  .step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .step:last-child{border-bottom:none}
+  .step .sn{counter-increment:s;font-family:var(--serif);font-size:1.8rem;font-weight:700;color:var(--gold);min-width:48px;line-height:1}
+  .step .sn::before{content:"0" counter(s)}
+  .step .sc h4{font-family:var(--serif);font-size:1.18rem;font-weight:600;margin-bottom:5px}
+  .step .sc p{font-size:.94rem;color:var(--fg-dim);max-width:720px}
+  footer{border-top:1px solid var(--line);padding:46px 0 64px;position:relative;z-index:1}
+  footer .f{max-width:var(--maxw);margin:0 auto;padding:0 28px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:18px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--fg-faint)}
+  footer .f b{color:var(--fg-dim);font-weight:500}
+  .js .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+  .js .reveal.in{opacity:1;transform:none}
+  @media (max-width:880px){.cols3,.engines,.cards,.why,.kpis{grid-template-columns:1fr}.hero{padding:46px 0 40px}section{padding:62px 0}}
+  @media print{
+    body{background:#fff;color:#15171c;font-size:12px}
+    body::before,body::after{display:none}
+    .topbar,.toc{display:none}
+    .eyebrow,.sec-num,.card .ci,.kpiblock .h,.engine .en{color:#9a7a16}
+    .hero h1,.sec-title,.card h4,.engine h3,.tl-item h4,.bigidea .q,.manifesto p{color:#101216}
+    .ctx,.card,.engine,.kpiblock,.why .w,.bigidea,.manifesto,.commercial{background:#f6f5f2;border:1px solid #ddd;box-shadow:none}
+    .lead-para,p.body,.hero .lede,.bigidea .sub{color:#33363d}
+    section{break-inside:avoid;border-color:#e2e2e2}.card,.engine,.ctx,.tl-item{break-inside:avoid}
+    .tag,.chipc{color:#333 !important;background:#eee !important;border-color:#ccc !important}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> Estratégia Carreira Jurídica</div>
+  <div class="right">Documento Analítico · Lançamento SNCJ 2026</div>
+</div>
+
+<header class="wrap hero">
+  <div class="eyebrow reveal">Semana Nacional dos Concursos Jurídicos 2026</div>
+  <h1 class="reveal">De espectador<br>a <span class="it">protagonista.</span></h1>
+  <p class="lede reveal">A maior entrega gratuita do ano para concurseiros jurídicos deixa de ser uma <b>grade de aulas que se assiste</b> e passa a ser uma <b>arena em que o aluno compete, estuda com constância e evolui.</b> Mesmo conteúdo de altíssimo valor, três motores de engajamento rodando ao mesmo tempo, em cima das seis carreiras.</p>
+
+  <div class="metarow reveal">
+    <span><b>Formato:</b> maratona gratuita + competição nacional</span>
+    <span><b>Públicos:</b> delegado, promotor, cartórios, magistratura, procuradorias, defensorias</span>
+    <span><b>Tese:</b> engajamento que gera valor real</span>
+  </div>
+
+  <div class="manifesto reveal">
+    <div class="tag">A virada da campanha</div>
+    <p>O concurseiro não precisa de <span class="strike">mais um evento para assistir no segundo monitor.</span> Ele precisa de um lugar onde <span class="hit">o estudo dele acontece, é medido e é recompensado todos os dias.</span></p>
+  </div>
+
+  <nav class="toc reveal">
+    <a href="#contexto"><span class="n">01</span>O contexto e a virada</a>
+    <a href="#bigidea"><span class="n">02</span>A big idea 2026</a>
+    <a href="#conceito"><span class="n">03</span>O conceito e os 3 motores</a>
+    <a href="#nucleo"><span class="n">04</span>Entregas: núcleo</a>
+    <a href="#engajamento"><span class="n">05</span>Entregas: engajamento</a>
+    <a href="#jornada"><span class="n">06</span>A jornada do aluno</a>
+    <a href="#racional"><span class="n">07</span>Por que vidra</a>
+    <a href="#metricas"><span class="n">08</span>Métricas</a>
+    <a href="#passos"><span class="n">09</span>Próximos passos</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- 01 -->
+<section id="contexto" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">01</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">Diagnóstico</span><h2 class="sec-title">O contexto e a virada</h2></div>
+  </div>
+  <p class="lead-para reveal">A SNCJ já é um patrimônio. Em 2024 e 2025 ela provou que <em>autoridade</em> (grandes juristas) somada a <em>volume</em> (20 questões mais cobradas, atualização jurisprudencial, planejamento por carreira) atrai e prepara muito bem. O limite não está no conteúdo. Está no comportamento que ele induz: assistir.</p>
+  <p class="body reveal">O modelo de hoje compete por atenção contra Netflix, Instagram e o cansaço de quem estuda o dia inteiro. Aula gravada e webinário, por melhores que sejam, são consumo passivo: o aluno entra, assiste um pedaço, sai e raramente volta no dia seguinte. A oportunidade de 2026 é transformar consumo passivo em <b>participação ativa e diária</b>, sem abrir mão de uma vírgula da qualidade que já existe.</p>
+  <div class="cols3">
+    <div class="ctx now reveal"><div class="bartop"></div><div class="lab">Onde estamos</div><h4>Uma maratona para assistir</h4><p>Grade densa de masterclasses e aulas técnicas. Excelente em valor de conteúdo, mas o engajamento depende só do interesse no tema do dia. Pouco motivo para voltar amanhã.</p></div>
+    <div class="ctx gap reveal"><div class="bartop"></div><div class="lab">O que falta</div><h4>Constância e participação</h4><p>O aluno entra, assiste um trecho e some. Falta um motivo concreto para voltar todo dia e, principalmente, para estudar de fato durante a Semana, e não só consumir conteúdo de forma solta.</p></div>
+    <div class="ctx shift reveal"><div class="bartop"></div><div class="lab">A virada de 2026</div><h4>Uma arena para competir</h4><p>Manter o conteúdo, plugar engajamento de verdade: uma Liga com missões diárias, ofensiva de presença e ranking, um plano de estudos personalizado, quiz ao vivo e um Simulado Nacional como grande final.</p></div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="bigidea" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">02</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">Posicionamento</span><h2 class="sec-title">A big idea de 2026</h2></div>
+  </div>
+  <p class="body reveal">A ideia central precisa falar com as <b>seis carreiras</b>, não com uma. Por isso ela combina amplitude (todas as carreiras), a autoridade que já funciona (os maiores juristas) e o diferencial novo: a única preparação gratuita que faz o aluno sair da plateia e estudar de verdade, todos os dias.</p>
+  <div class="bigidea reveal">
+    <div class="q">Os maiores juristas do país e a preparação gratuita que faz você <span class="u">sair da plateia e estudar de verdade, todos os dias</span>, para as seis carreiras jurídicas.</div>
+    <p class="sub">Mantemos o que já funciona (a autoridade dos grandes nomes e a grade técnica que prepara para a prova objetiva, onde está a maior parte dos alunos) e adicionamos a única coisa que faltava: <b>um motivo concreto para o aluno voltar e estudar todo dia.</b> O foco agora é levar o máximo de gente bem preparada para a aprovação na objetiva, que é a porta de entrada de todas as seis carreiras.</p>
+    <div class="careers">
+      <span class="chipc">Delegado</span><span class="chipc">Promotor</span><span class="chipc">Cartórios</span><span class="chipc">Magistratura</span><span class="chipc">Procuradorias</span><span class="chipc">Defensorias</span>
+    </div>
+  </div>
+  <p class="body reveal" style="margin-top:26px">Observação de número: o headline de vagas (foram 2.109 em 2025) e o de aprovados (2.585 em 5 anos) devem ser atualizados a partir da Planilha Unificada de Carreiras Jurídicas e do Jornalismo, como já é praxe.</p>
+</section>
+
+<!-- 03 -->
+<section id="conceito" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">03</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">O conceito disruptivo</span><h2 class="sec-title">Três motores de engajamento</h2></div>
+  </div>
+  <p class="lead-para reveal">A grade de aulas não some. Ela vira o <em>combustível</em> de três motores que rodam em paralelo durante toda a Semana. Cada motor ataca um gatilho diferente de engajamento e, ao mesmo tempo, é totalmente realizável por nós, sem depender de tecnologia que ainda não dominamos.</p>
+  <div class="engines">
+    <div class="engine e1 reveal"><div class="en">Motor 01</div><h3>A Liga</h3><div class="role">Competição · Hábito · Status</div><p>Transforma a Semana num campeonato nacional por carreira. Missões diárias (quizzes), ofensiva de presença, ranking por composição de pontos e premiação, fechando com o Simulado Nacional. É o que faz o aluno voltar todo dia.</p></div>
+    <div class="engine e2 reveal"><div class="en">Motor 02</div><h3>O Plano de Estudos</h3><div class="role">Personalização · Valor real</div><p>Um formulário de nivelamento (algo que já fizemos antes) que entrega ao aluno um plano de estudos personalizado para a carreira dele. Baixo risco de execução, alto valor percebido e personalização desde o primeiro dia.</p></div>
+    <div class="engine e3 reveal"><div class="en">Motor 03</div><h3>Os Grandes Palcos</h3><div class="role">Ao vivo · Interação · Energia</div><p>As lives com os grandes nomes ganham energia de programa ao vivo, com quiz em tempo real durante as transmissões. O aluno fica na aula inteira em vez de sair no meio, e o ao vivo cria presença e urgência.</p></div>
+  </div>
+  <p class="body reveal" style="margin-top:34px">A leitura simples: <b>o Motor 01 cria o hábito, o Motor 02 entrega o valor e a personalização, o Motor 03 traz a energia do ao vivo.</b> Juntos, eles fazem o aluno passar de "vi um pedaço da aula" para "não saio da Semana Nacional".</p>
+</section>
+
+<!-- 04 -->
+<section id="nucleo" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">04</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">Entregas · Parte 1</span><h2 class="sec-title">O núcleo de conteúdo</h2></div>
+  </div>
+  <p class="body reveal">O que já é comprovado e amado, mantido e levemente enxugado para abrir palco para as novidades. É a base de valor e de credibilidade da campanha, toda focada na preparação para a prova objetiva.</p>
+
+  <div class="grouphead reveal"><span class="gtag">Bloco A</span><h3>Estratégia e cenário</h3><span class="ln"></span></div>
+  <div class="cards">
+    <div class="card reveal"><div class="ci">A1</div><h4>Abertura Oficial</h4><p>Webinário que abre a Semana com a régua de eventos, a promoção e o panorama geral, já com o número atualizado de vagas somando as seis carreiras. Marca o início da Liga.</p><div class="tags"><span class="tag">Conteúdo</span><span class="tag car">6 carreiras</span></div></div>
+    <div class="card reveal"><div class="ci">A2</div><h4>Panorama e Apostas (2 anos)</h4><p>Leitura de cenário carreira por carreira, com as apostas de editais para o período. Conteúdo historicamente muito atrativo e que sustenta a urgência da preparação antecipada.</p><div class="tags"><span class="tag">Conteúdo</span><span class="tag car">6 carreiras</span></div></div>
+    <div class="card reveal"><div class="ci">A3</div><h4>Oportunidades Imediatas</h4><p>Concursos com edital publicado ou iminente para os próximos meses, separados por carreira. Cria senso de "é agora".</p><div class="tags"><span class="tag">Conteúdo</span></div></div>
+    <div class="card reveal"><div class="ci">A4</div><h4>Carreiras Jurídicas Mais Promissoras</h4><p>Comparativo de vagas, salários e concorrência entre as seis carreiras, pensado para o aluno ainda indeciso sobre qual seguir. Ajuda cada público a se enxergar na Semana.</p><div class="tags"><span class="tag">Conteúdo</span><span class="tag car">6 carreiras</span></div></div>
+  </div>
+
+  <div class="grouphead reveal"><span class="gtag">Bloco B</span><h3>Conteúdo técnico</h3><span class="ln"></span></div>
+  <div class="cards">
+    <div class="card reveal"><div class="ci">B1</div><h4>As 20 Questões Mais Cobradas</h4><p>Uma aula por matéria resolvendo as questões de maior incidência, versão 2026. Vira munição direta para os quizzes das missões e do ao vivo.</p><div class="tags"><span class="tag">Conteúdo</span></div></div>
+    <div class="card reveal"><div class="ci">B2</div><h4>Atualização Jurisprudencial 1º Sem/26</h4><p>Aulas por disciplina com as decisões mais relevantes do semestre (STF, STJ e tribunais). O pilar de volume que o aluno espera e que pesa na percepção de valor.</p><div class="tags"><span class="tag">Conteúdo</span></div></div>
+    <div class="card reveal"><div class="ci">B3</div><h4>Mapeamento dos Assuntos Mais Cobrados</h4><p>Panorama estatístico dos temas que mais caem, para o aluno priorizar. Conversa diretamente com o plano de estudos personalizado.</p><div class="tags"><span class="tag">Conteúdo</span></div></div>
+    <div class="card reveal"><div class="ci">B4</div><h4>Planejamento por Carreira</h4><p>Uma sessão para cada uma das seis carreiras, no formato "aprenda na prática como montar", com trilha e cronograma. Garante que a campanha fale com os seis públicos.</p><div class="tags"><span class="tag">Conteúdo</span><span class="tag car">6 carreiras</span></div></div>
+  </div>
+
+  <div class="grouphead reveal"><span class="gtag">Bloco C</span><h3>Autoridade e método</h3><span class="ln"></span></div>
+  <div class="cards">
+    <div class="card reveal"><div class="ci">C1</div><h4>Masterclasses com grandes nomes</h4><p>Aulas com autoridades do Direito sobre temas atuais, o apelo principal que funcionou em 2025. Curadoria distribuída para cobrir as seis carreiras. São também as aulas-âncora do ao vivo.</p><div class="tags"><span class="tag">Conteúdo</span><span class="tag car">6 carreiras</span></div></div>
+    <div class="card reveal"><div class="ci">C2</div><h4>Aulas de desempenho</h4><p>Memória, neurociência aplicada, controle emocional e produtividade nos estudos, com um nome forte para ancorar. Conecta com as missões de constância da Liga.</p><div class="tags"><span class="tag">Conteúdo</span></div></div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="engajamento" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">05</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">Entregas · Parte 2 · As novidades</span><h2 class="sec-title">As camadas de engajamento</h2></div>
+  </div>
+  <p class="body reveal">Aqui mora a disrupção, e tudo foi calibrado para ser realizável por nós. Cada entrega faz duas coisas ao mesmo tempo: <b>prende o aluno na Semana</b> e <b>entrega valor real.</b> As etiquetas mostram o que cada uma ativa.</p>
+
+  <!-- MOTOR 1 -->
+  <div class="grouphead volt reveal"><span class="gtag">Motor 01</span><h3>A Liga dos Concursos Jurídicos</h3><span class="ln"></span></div>
+  <div class="cards">
+    <div class="card spot reveal span2"><div class="ci">L0</div><h4>A Liga, em uma frase</h4><p>Ao se inscrever, o aluno entra automaticamente na Liga da sua carreira. Cada realização durante a Semana soma pontos para um ranking nacional: as missões diárias somam, a ofensiva de presença soma e o Simulado Nacional soma, até um total de 100 pontos. A Semana deixa de ter "audiência" e passa a ter "competidores", com premiação no fim.</p><div class="tags"><span class="tag eng">Engajamento</span><span class="tag car">6 carreiras</span></div></div>
+    <div class="card reveal"><div class="ci">L1</div><h4>Missões diárias (quizzes)</h4><p>Todo dia, um quiz amarrado à aula do dia. Responder é a missão, e cada acerto soma pontos para o ranking. Simples de executar e de entender, e transforma o assistir em estudar.</p><div class="tags"><span class="tag eng">Engajamento</span><span class="tag val">Valor real</span></div></div>
+    <div class="card reveal"><div class="ci">L2</div><h4>Ofensiva de presença</h4><p>Uma página onde o aluno marca a aula do dia e digita uma palavra-chave revelada durante a transmissão. Isso comprova a presença de verdade (ele precisa ter assistido) e mantém a ofensiva viva, somando pontos a cada dia consecutivo.</p><div class="tags"><span class="tag eng">Engajamento</span></div></div>
+    <div class="card reveal"><div class="ci">L3</div><h4>Premiação aspiracional</h4><p>O topo de cada ranking ganha algo grande (assinatura anual, mentoria, vaga em imersão presencial). Prêmios menores e sorteios entre quem cumpriu as missões mantêm todo mundo no jogo, não só o topo.</p><div class="tags"><span class="tag eng">Engajamento</span></div></div>
+    <div class="card gold reveal"><div class="ci">L4</div><h4>Simulado Nacional · A Grande Final</h4><p>Um simulado gratuito por carreira que fecha a Liga e soma a última fatia de pontos do ranking, com gabarito comentado ao vivo e premiação dos campeões. É o clímax da campanha e a ponte natural para a virada do lote da oferta.</p><div class="tags"><span class="tag eng">Engajamento</span><span class="tag val">Valor real</span><span class="tag car">6 carreiras</span></div></div>
+    <div class="card spot reveal span2"><div class="ci">L5</div><h4>Ranking nacional e a composição dos 100 pontos</h4><p>Seis rankings separados, um por carreira, para não comparar laranja com maçã. O aluno acumula pontos de três fontes ao longo da Semana e vê, em tempo real, onde está e o que falta para subir. A distribuição abaixo é uma sugestão de partida, fácil de calibrar.</p>
+      <div class="points">
+        <div class="ptitle"><span>Composição do ranking</span><b>Total: 100 pontos</b></div>
+        <div class="pbar"><div class="s1">40</div><div class="s2">25</div><div class="s3">35</div></div>
+        <div class="plegend"><span><i style="background:var(--volt)"></i> Missões diárias · 40</span><span><i style="background:var(--gold)"></i> Ofensiva de presença · 25</span><span><i style="background:var(--blue)"></i> Simulado Nacional · 35</span></div>
+        <div class="pnote">Números ilustrativos. Podemos ajustar o peso de cada fonte conforme o comportamento que quisermos premiar mais.</div>
+      </div>
+      <div class="tags" style="margin-top:16px"><span class="tag eng">Engajamento</span><span class="tag car">6 carreiras</span></div>
+    </div>
+  </div>
+
+  <!-- MOTOR 2 -->
+  <div class="grouphead volt reveal"><span class="gtag">Motor 02</span><h3>O Plano de Estudos Personalizado</h3><span class="ln"></span></div>
+  <div class="cards">
+    <div class="card spot reveal span2"><div class="ci">P0</div><h4>Como funciona, sem depender de IA</h4><p>Em vez de tecnologia que ainda é arriscada para nós, usamos algo que já fizemos e sabemos executar: <b>um formulário de nivelamento</b>. A partir das respostas do aluno (carreira-alvo, tempo disponível, nível atual, pontos fracos), entregamos um <b>plano de estudos personalizado</b>. Baixo risco, alto valor percebido, e personalização da experiência desde o primeiro dia.</p><div class="tags"><span class="tag per">Personalização</span><span class="tag val">Valor real</span></div></div>
+    <div class="card reveal"><div class="ci">P1</div><h4>Formulário de nivelamento</h4><p>Um questionário simples por carreira que diagnostica onde o aluno está. Rápido de responder, serve de porta de entrada e ainda gera dado valioso sobre a base.</p><div class="tags"><span class="tag per">Personalização</span></div></div>
+    <div class="card reveal"><div class="ci">P2</div><h4>Plano de estudos sob medida</h4><p>Com base no nivelamento, o aluno recebe um cronograma e uma lista de prioridades para a carreira dele. Entrega de valor concreta, daquelas que normalmente só vêm em produto pago.</p><div class="tags"><span class="tag per">Personalização</span><span class="tag val">Valor real</span><span class="tag car">6 carreiras</span></div></div>
+    <div class="card span2 reveal"><div class="ci">P3</div><h4>O plano puxa para a grade</h4><p>O plano não fica solto: ele aponta quais aulas da Semana o aluno deve priorizar e em que ordem. Isso aumenta a relevância percebida, o retorno diário e a sensação de que a Semana foi montada para a carreira dele, conectando o Motor 02 direto com o conteúdo do núcleo.</p><div class="tags"><span class="tag per">Personalização</span><span class="tag eng">Engajamento</span></div></div>
+  </div>
+
+  <!-- MOTOR 3 -->
+  <div class="grouphead volt reveal"><span class="gtag">Motor 03</span><h3>Os Grandes Palcos · lives com energia de ao vivo</h3><span class="ln"></span></div>
+  <div class="cards">
+    <div class="card gold reveal span2"><div class="ci">G1</div><h4>Quiz ao Vivo</h4><p>Durante as aulas, um quiz em tempo real com placar na tela, no estilo game show. A audiência compete enquanto aprende, e isso segura o aluno na live inteira em vez de sair no meio. O quiz ao vivo pode, inclusive, valer como a missão do dia, amarrando o Motor 03 ao Motor 01.</p><div class="tags"><span class="tag eng">Engajamento</span><span class="tag val">Valor real</span></div></div>
+    <div class="card reveal span2"><div class="ci">G2</div><h4>As aulas-âncora, ao vivo de verdade</h4><p>As masterclasses com os grandes nomes são posicionadas como momentos imperdíveis e transmitidas ao vivo, com interação. O simples fato de ser ao vivo (e não só mais uma gravação para ver depois) cria presença, urgência e o clima de evento que faz a Semana parecer única.</p><div class="tags"><span class="tag eng">Engajamento</span><span class="tag">Conteúdo</span></div></div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="jornada" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">06</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">Experiência</span><h2 class="sec-title">A jornada do aluno</h2></div>
+  </div>
+  <p class="body reveal">O segredo de manter alguém vidrado é dar um arco, com começo, escalada e clímax, e não uma lista solta de eventos. A Semana passa a ter dramaturgia.</p>
+  <div class="timeline">
+    <div class="tl-item reveal"><div class="ph">Antes · Captação</div><h4>O convite e a antecipação</h4><p>O aluno baixa um material, escolhe a carreira e já é convidado para a Liga. A comunicação antecipa a premiação e o Simulado Nacional como grande final. A expectativa é construída antes do dia 1.</p></div>
+    <div class="tl-item reveal"><div class="ph">Dia 1 · Ativação</div><h4>Entrou, já é competidor</h4><p>Na abertura, o aluno preenche o formulário de nivelamento e recebe seu plano de estudos personalizado. Vê o ranking zerado, a primeira missão (quiz) e a ofensiva começando. A virada de chave: ele não veio assistir, veio competir e estudar.</p></div>
+    <div class="tl-item reveal"><div class="ph">Semanas centrais · Escalada</div><h4>O motor diário girando</h4><p>O conteúdo técnico e as masterclasses alimentam os quizzes; o aluno marca presença com a palavra-chave do dia; o quiz ao vivo segura as lives; a ofensiva cresce e o ranking esquenta. Cada dia tem um motivo concreto para voltar.</p></div>
+    <div class="tl-item reveal"><div class="ph">Reta final · Tensão</div><h4>A corrida pelo ranking</h4><p>Com a maioria dos pontos de missões e presença já distribuídos, a disputa fica acirrada e a expectativa se volta para a fatia final de pontos: o Simulado Nacional. Quem participou todo dia chega na frente.</p></div>
+    <div class="tl-item fin reveal"><div class="ph">Encerramento · Grande Final</div><h4>Simulado Nacional + premiação</h4><p>Pico de participação, gabarito comentado ao vivo, fechamento da composição dos 100 pontos, coroação dos campeões da Liga e virada de lote. Fecha o arco com emoção e converte no momento de maior valor percebido da campanha.</p></div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="racional" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">07</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">O racional</span><h2 class="sec-title">Por que isso deixa o aluno vidrado</h2></div>
+  </div>
+  <p class="body reveal">Não é gamificação por enfeite. Cada mecanismo aciona um gatilho de comportamento conhecido, e todos eles reforçam, em vez de competir com, a entrega de valor.</p>
+  <div class="why">
+    <div class="w reveal"><div class="k">Loop de hábito</div><h4>Gatilho, ação, recompensa, investimento</h4><p>Quiz do dia e check-in com palavra-chave (gatilho e ação), pontos no ranking (recompensa), ofensiva que dói perder (investimento). É o ciclo que cria retorno diário, não um pico único de audiência.</p></div>
+    <div class="w reveal"><div class="k">Status e progressão</div><h4>O ranking ativa competência e reconhecimento</h4><p>Ver-se subir entre os pares da própria carreira, somando pontos de várias fontes rumo aos 100, aciona a motivação por domínio e por reconhecimento, combustíveis fortes de engajamento sustentado.</p></div>
+    <div class="w reveal"><div class="k">FOMO e ao vivo</div><h4>O que é ao vivo não pode esperar</h4><p>O quiz ao vivo, a palavra-chave do dia e o Simulado Nacional acontecem em momentos marcados. Quem não está perde pontos e perde o momento, e isso traz o aluno de volta na hora certa.</p></div>
+    <div class="w reveal"><div class="k">Prova social</div><h4>Ver os outros competindo puxa quem está parado</h4><p>O ranking público, os campeões em destaque e o quiz ao vivo coletivo transformam a Semana num movimento, e não numa experiência solitária de assistir aula.</p></div>
+    <div class="w reveal"><div class="k">Personalização</div><h4>Relevância sobe, abandono cai</h4><p>O formulário de nivelamento e o plano de estudos fazem o aluno sentir que a Semana foi montada para a carreira dele. Quanto mais relevante, mais ele fica.</p></div>
+    <div class="w reveal"><div class="k">Reciprocidade</div><h4>Valor real antes da venda</h4><p>Entregar um plano de estudos personalizado e uma grade de altíssimo valor de graça eleva a percepção de valor da assinatura. Quem já recebeu muito tende a confiar e a comprar mais.</p></div>
+  </div>
+  <div class="commercial reveal">
+    <h4>Como o engajamento vira faturamento</h4>
+    <p>Os três motores não brigam com a conversão, eles a alimentam. <b>O plano de estudos</b> aponta a trilha (e, por tabela, o produto) certo para a carreira do aluno. <b>A Liga</b> usa a própria assinatura como prêmio máximo, então competir é desejar o produto. <b>O conteúdo e o plano</b> entregam tanto valor que a assinatura paga vira o passo natural para continuar. E <b>a Grande Final</b> concentra o pico de presença e de valor percebido exatamente na virada do lote. Na prática, quanto mais o aluno se engaja, mais perto ele fica da compra, e isso é mensurável.</p>
+  </div>
+</section>
+
+<!-- 08 -->
+<section id="metricas" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">08</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">Como saber se funcionou</span><h2 class="sec-title">Métricas de sucesso</h2></div>
+  </div>
+  <p class="body reveal">A grande vantagem de uma arena sobre uma grade: tudo vira dado. Sugestão de indicadores para acompanhar antes, durante e depois.</p>
+  <div class="kpis">
+    <div class="kpiblock eng reveal"><div class="h">Engajamento</div><ul>
+      <li><b>Taxa de ativação:</b> percentual de inscritos que preencheram o nivelamento e entraram na Liga</li>
+      <li><b>Retorno diário:</b> usuários ativos por dia e tamanho médio da ofensiva de presença</li>
+      <li><b>Presença real:</b> check-ins com palavra-chave por aula, ou seja, quem de fato assistiu</li>
+      <li><b>Participação nos quizzes:</b> respostas nas missões diárias e no quiz ao vivo</li>
+      <li><b>Grande final:</b> número de participantes no Simulado Nacional e alcance e compartilhamento da Semana</li>
+    </ul></div>
+    <div class="kpiblock biz reveal"><div class="h">Negócio</div><ul>
+      <li><b>Topo de funil:</b> leads captados e custo por lead, comparado a 2024 e 2025</li>
+      <li><b>Conversão por lote:</b> taxa de conversão e ticket médio em cada janela de oferta</li>
+      <li><b>Faturamento:</b> realizado contra orçado e contra os anos anteriores</li>
+      <li><b>Eficiência:</b> retorno sobre a verba de marketing (foi R$250 mil em 2024 e R$350 mil em 2025)</li>
+      <li><b>O elo de ouro:</b> correlação entre pontos na Liga e taxa de conversão, para provar que quem participa mais, compra mais</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section id="passos" class="wrap">
+  <div class="sec-head reveal">
+    <div class="sec-num">09</div>
+    <div style="flex:1;min-width:280px"><span class="sec-kicker">Para tirar do papel</span><h2 class="sec-title">Próximos passos</h2></div>
+  </div>
+  <div class="steps">
+    <div class="step reveal"><div class="sn"></div><div class="sc"><h4>Definir o escopo das camadas</h4><p>A Liga é o carro-chefe. Confirmar quais mecânicas entram já em 2026 com força total (missões, ofensiva, ranking, Simulado) e qual é a versão mínima viável de cada uma.</p></div></div>
+    <div class="step reveal"><div class="sn"></div><div class="sc"><h4>Estruturar a Liga e o sistema de pontos</h4><p>Alinhar com produto e tecnologia a página de check-in com palavra-chave, os quizzes, a composição dos 100 pontos e o ranking por carreira. Reaproveitar o formulário de nivelamento que já fizemos para o plano de estudos.</p></div></div>
+    <div class="step reveal"><div class="sn"></div><div class="sc"><h4>Fechar a curadoria de juristas</h4><p>Mapear os convidados das masterclasses e definir as aulas-âncora do ao vivo, garantindo cobertura das seis carreiras.</p></div></div>
+    <div class="step reveal"><div class="sn"></div><div class="sc"><h4>Montar a grade de programação</h4><p>Transformar este documento em planilha de programação nos moldes de 2024 e 2025 (datas, horários, professores, estúdios), já encaixando os quizzes diários, os check-ins e a grande final no calendário.</p></div></div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="f">
+    <span><b>Estratégia Carreira Jurídica</b> · Semana Nacional dos Concursos Jurídicos 2026</span>
+    <span>Documento analítico · versão para discussão interna</span>
+  </div>
+</footer>
+
+<script>
+  document.documentElement.classList.add('js');
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:0.12,rootMargin:"0px 0px -8% 0px"});
+  document.querySelectorAll('.reveal').forEach((el,i)=>{el.style.transitionDelay=(Math.min(i%6,5)*55)+'ms';io.observe(el);});
+</script>
+</body>
+</html>

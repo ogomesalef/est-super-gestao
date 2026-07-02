@@ -12,7 +12,7 @@ export function createView(
   name: string,
   type: ViewType,
   groupBy: GroupByKey = "status",
-  extras?: Partial<Pick<SavedView, "search" | "sortKey" | "sortDir" | "filterStatus">>
+  extras?: Partial<Pick<SavedView, "search" | "sortKey" | "sortDir" | "filterStatus" | "groupOrder" | "hiddenGroups">>
 ): SavedView {
   return normalizeView(
     { id: uid(), name, type, groupBy, ...extras },
@@ -24,6 +24,15 @@ export function defaultViewsFor(databaseId: string): SavedView[] {
   if (databaseId === "parcerias") {
     return [
       createView("Pipeline", "board", "status"),
+      createView("Analisar candidatos", "table", "status", {
+        filterStatus: "__needsReview__",
+        sortKey: "applicationReceivedAt",
+        sortDir: "desc",
+      }),
+      createView("Cobrar proposta", "table", "status", {
+        filterStatus: "__proposalStale__",
+        sortKey: "name",
+      }),
       createView("Tabela", "table", "status"),
       createView("Cards", "gallery", "modality"),
     ];
@@ -31,12 +40,20 @@ export function defaultViewsFor(databaseId: string): SavedView[] {
   if (databaseId === "contatos") {
     return [
       createView("Pipeline", "board", "status"),
+      createView("Refazer contato", "table", "status", {
+        filterStatus: "__contactStale__",
+        sortKey: "name",
+      }),
       createView("Tabela", "table", "status"),
       createView("Cards", "gallery", "vertical"),
     ];
   }
-  if (databaseId === "entregas-posts") {
+  if (databaseId === "entregas-posts" || databaseId === "entregas-posts-v2") {
     return [
+      createView("Recentes", "table", "none", {
+        sortKey: "syncedAt",
+        sortDir: "desc",
+      }),
       createView("Sem atribuição", "table", "status", {
         filterStatus: "Sem atribuição",
         sortKey: "date",
@@ -74,6 +91,13 @@ export function defaultViewsFor(databaseId: string): SavedView[] {
       createView("Cards", "gallery", "status"),
       createView("Pipeline", "board", "status"),
       createView("Tabela", "table", "program"),
+    ];
+  }
+  if (databaseId === "relatorios") {
+    return [
+      createView("Tabela", "table", "none"),
+      createView("Cards", "gallery", "modality"),
+      createView("Quadro", "board", "modality"),
     ];
   }
   return [createView("Tabela", "table", "none")];
@@ -130,6 +154,8 @@ export function useSavedViews(databaseId: string) {
       sortKey: base.sortKey,
       sortDir: base.sortDir,
       filterStatus: base.filterStatus,
+      groupOrder: base.groupOrder,
+      hiddenGroups: base.hiddenGroups,
     });
     persist({
       views: [...state.views, copy],

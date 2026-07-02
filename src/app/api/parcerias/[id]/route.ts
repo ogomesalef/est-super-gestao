@@ -21,10 +21,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     where: { id },
     data: {
       fullName: body.fullName,
+      socialName: body.socialName !== undefined ? (String(body.socialName || "").trim() || null) : undefined,
       email: body.email,
       whatsapp: body.whatsapp,
       status: body.status,
       alerts: body.alerts,
+      needsReview: body.needsReview !== undefined ? !!body.needsReview : undefined,
       partnership: {
         upsert: {
           create: {

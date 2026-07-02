@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pedido de vídeo | Super Embaixador</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f5f7fb;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Pedido de colaboração em vídeo — {{campaignName}}.
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f7fb;padding:20px 0;">
+      <tr>
+        <td align="center" style="padding:0 12px;">
+          <table role="presentation" width="640" cellspacing="0" cellpadding="0"
+            style="width:640px;max-width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(20,29,44,.08);">
+
+            <tr>
+              <td style="padding:20px 22px;background:{{headerBg}};color:#ffffff;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;opacity:.92;">
+                  Programa Super Embaixador · {{verticalBrand}}
+                </div>
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;line-height:1.25;margin-top:6px;">
+                  Pedido de vídeo — {{campaignName}}
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:22px;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.65;color:#101828;">
+                  Olá, <strong>{{firstName}}</strong>!
+                  <br /><br />
+                  Estamos preparando a campanha <strong>{{campaignName}}</strong> no {{verticalBrand}} e queremos pedir <strong>sua colaboração</strong> com um vídeo.
+                  <br /><br />
+                  Pensamos em você porque o formato combina muito com o seu estilo de conteúdo como Super Embaixadora {{verticalDisplay}}.
+                </div>
+
+                <div style="margin-top:18px;padding:16px;border:1px solid #e6eaf2;border-radius:12px;background:#fbfcff;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#111827;">
+                    O que pedimos
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.65;color:#344054;margin-top:8px;">
+                    {{videoConcept}}
+                  </div>
+                </div>
+
+                <div style="margin-top:14px;padding:14px 16px;border-left:4px solid {{headerBg}};background:#fff8f8;border-radius:0 10px 10px 0;border-top:1px solid #eef2f7;border-right:1px solid #eef2f7;border-bottom:1px solid #eef2f7;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.65;color:#344054;">
+                    <strong>Importante:</strong> não é necessário divulgar cupom no vídeo. Queremos algo natural, no seu tom — e vamos <strong>avaliar o material para possível collab no perfil do {{verticalBrand}}</strong>, com boa visibilidade para você.
+                  </div>
+                </div>
+
+                <div style="margin-top:18px;padding:16px;border:1px solid #e6eaf2;border-radius:12px;background:#ffffff;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#111827;">
+                    Prazo
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.65;color:#344054;margin-top:6px;">
+                    Envie o vídeo bruto até <strong>{{dueDateDisplay}}</strong>. Se conseguir entregar antes, ainda melhor.
+                  </div>
+                </div>
+
+                <div style="margin-top:18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#101828;">
+                  Preparamos uma página só sua com roteiro completo, referência de estilo e pasta para upload:
+                </div>
+
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:14px;">
+                  <tr>
+                    <td style="border-radius:10px;background:{{headerBg}};">
+                      <a href="{{briefingUrl}}"
+                         style="display:inline-block;padding:13px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">
+                        Abrir meu briefing e roteiro
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <div style="margin-top:14px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#667085;word-break:break-all;">
+                  {{briefingUrl}}
+                </div>
+
+                <div style="margin-top:22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#344054;line-height:1.6;">
+                  Qualquer dúvida, estamos à disposição.
+                  <br /><br />
+                  Atenciosamente,<br />
+                  <strong>Equipe Super Embaixadores · {{verticalBrand}}</strong>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 22px;background:#f8fafc;border-top:1px solid #eef2f7;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#667085;">
+                  Esta mensagem é referente ao {{verticalFull}}.
+                </div>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

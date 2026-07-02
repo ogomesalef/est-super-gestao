@@ -31,6 +31,9 @@ model Contact {
   notes         String?
   prospectedAt  DateTime?
   statusChangedAt DateTime?
+  lastContactedAt DateTime?
+  nextFollowUpAt DateTime?
+  contactAttempts Int @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   ambassadorId  String?   @unique
@@ -41,12 +44,21 @@ model Ambassador {
   id          String   @id @default(cuid())
   program     String   // OAB | ECJ
   fullName    String
+  socialName  String?
   email       String?
   whatsapp    String?
   instagram   String
   tiktok      String?
   youtube     String?
   status      String   @default("Pendente")
+  source      String?  // prospeccao | formulario | import | manual
+  applicationReceivedAt DateTime?
+  needsReview Boolean  @default(false)
+  applicationFormData String?
+  sheetSyncKey String? @unique
+  respostasSheetName String?
+  respostasSheetRow Int?
+  reportSlug  String?  @unique
   alerts      String?
   gmailThreadId String?
   createdAt   DateTime @default(now())
@@ -63,6 +75,7 @@ model Ambassador {
 
   @@unique([program, instagram])
   @@index([status])
+  @@index([needsReview])
 }
 
 model AmbassadorQuickNote {
@@ -98,6 +111,7 @@ model Partnership {
   startDate       DateTime?
   endDate         DateTime?
   proposalSentAt  DateTime?
+  proposalReminderSentAt DateTime?
   formalizationSentAt DateTime?
   legalCpf          String?
   legalAddress      String?

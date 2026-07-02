@@ -11,6 +11,7 @@ export type SendEmailPayload = {
   to?: string;
   program?: string;
   cc?: string;
+  from?: string;
 };
 
 /** Gmail (cx@ + aliases) se configurado; senão tenta Apps Script bridge. */

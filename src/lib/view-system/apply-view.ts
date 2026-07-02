@@ -43,5 +43,7 @@ export function normalizeView(v: Partial<SavedView>, fallbackSort = "name"): Sav
     sortKey: v.sortKey || fallbackSort,
     sortDir: v.sortDir || "asc",
     filterStatus: v.filterStatus ?? "",
+    groupOrder: Array.isArray(v.groupOrder) ? v.groupOrder : undefined,
+    hiddenGroups: Array.isArray(v.hiddenGroups) ? v.hiddenGroups : undefined,
   };
 }

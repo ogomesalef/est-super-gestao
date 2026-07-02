@@ -1,34 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeHandle } from "@/lib/utils";
-import { syncMonthlyRowsForAmbassador } from "@/lib/services";
 import { serializeQuickNote } from "@/lib/ambassador-quick-notes";
+import { parseApplicationFormData } from "@/lib/respostas-row";
+
+function serializeAmbassador(a: Awaited<ReturnType<typeof prisma.ambassador.findMany>>[number]) {
+  return {
+    ...a,
+    applicationReceivedAt: a.applicationReceivedAt?.toISOString() ?? null,
+    applicationFormData: parseApplicationFormData(a.applicationFormData),
+    quickNotes: "quickNotes" in a && Array.isArray(a.quickNotes) ? a.quickNotes.map(serializeQuickNote) : undefined,
+  };
+}
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-  const program = searchParams.get("program");
+  try {
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get("status");
+    const program = searchParams.get("program");
 
-  const ambassadors = await prisma.ambassador.findMany({
-    where: {
-      ...(status ? { status } : {}),
-      ...(program ? { program } : {}),
-    },
-    include: {
-      partnership: true,
-      quickNotes: {
-        where: { completed: false },
-        orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+    const ambassadors = await prisma.ambassador.findMany({
+      where: {
+        ...(status ? { status } : {}),
+        ...(program ? { program } : {}),
       },
-    },
-    orderBy: { fullName: "asc" },
-  });
-  return NextResponse.json(
-    ambassadors.map((a) => ({
-      ...a,
-      quickNotes: a.quickNotes.map(serializeQuickNote),
-    }))
-  );
+      include: {
+        partnership: true,
+        contact: { select: { id: true } },
+        quickNotes: {
+          where: { completed: false },
+          orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+        },
+      },
+      orderBy: { fullName: "asc" },
+    });
+    return NextResponse.json(ambassadors.map(serializeAmbassador));
+  } catch (e) {
+    console.error("GET /api/parcerias", e);
+    return NextResponse.json({ error: "Erro ao carregar parcerias" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {

@@ -6,6 +6,7 @@ import { PAYMENT_STATUSES } from "@/lib/constants";
 import { usePersistedMonthRef } from "@/lib/use-persisted-month-ref";
 import { useVertical } from "@/components/vertical-context";
 import { useSavedViews } from "@/lib/view-system/use-saved-views";
+import { boardColumnOptionsFor } from "@/lib/view-system/board-columns";
 import { applyViewPipeline } from "@/lib/view-system/apply-view";
 import type { FilterOption, GroupByKey, SortOption } from "@/lib/view-system/types";
 import { ViewToolbar } from "@/components/views/view-toolbar";
@@ -14,10 +15,12 @@ import {
   FinanceiroGalleryView,
   FinanceiroTableView,
 } from "@/components/financeiro/financeiro-views";
-import { FinanceEmailModal } from "@/components/financeiro/finance-email-modal";
+import { FinanceEmailModal, type FinanceEmailModalPayload } from "@/components/financeiro/finance-email-modal";
+import type { SendEmailConfirmPayload } from "@/components/send-email-modal";
 import { FinanceiroValueModal } from "@/components/financeiro/financeiro-value-modal";
 import { TermoDataModal } from "@/components/financeiro/termo-data-modal";
 import type { FinanceiroRow } from "@/components/financeiro/types";
+import { displayName } from "@/lib/ambassador-name";
 
 const GROUP_OPTIONS: { key: GroupByKey; label: string }[] = [
   { key: "none", label: "Nenhum" },
@@ -34,14 +37,7 @@ const SORT_OPTIONS: SortOption[] = [
 
 const FILTER_OPTIONS: FilterOption[] = PAYMENT_STATUSES.map((s) => ({ value: s, label: s }));
 
-type EmailModalState = {
-  financeId: string;
-  action: string;
-  subject: string;
-  html: string;
-  recipient: string;
-  termLink?: string | null;
-};
+type EmailModalState = FinanceEmailModalPayload;
 
 export function FinanceiroClient() {
   const { vertical } = useVertical();
@@ -98,11 +94,19 @@ export function FinanceiroClient() {
       subject: data.subject,
       html: data.html,
       recipient: data.recipient,
+      recipientDisplay: data.recipientDisplay,
+      cc: data.cc,
+      ccDisplay: data.ccDisplay,
+      from: data.from,
+      program: data.program,
       termLink: data.termLink ?? null,
+      ambassadorEmail: data.ambassadorEmail,
+      whatsappMessage: data.whatsappMessage,
+      financeOnly: data.financeOnly,
     });
   }
 
-  async function confirmEmailSend(payload: { subject: string; html: string }) {
+  async function confirmEmailSend(payload: SendEmailConfirmPayload) {
     if (!emailModal) return;
     setLoading(emailModal.financeId + "send");
     await fetch("/api/financeiro/actions", {
@@ -113,6 +117,9 @@ export function FinanceiroClient() {
         action: emailModal.action,
         subject: payload.subject,
         html: payload.html,
+        to: payload.to,
+        from: payload.from,
+        cc: payload.cc,
       }),
     });
     setEmailModal(null);
@@ -217,6 +224,23 @@ export function FinanceiroClient() {
     await load();
   }
 
+  async function uploadSignedTermo(financeId: string, file: File) {
+    setLoading(`${financeId}:upload-termo`);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/financeiro/${financeId}/termo-assinado`, {
+      method: "POST",
+      body: fd,
+    });
+    const data = await res.json();
+    setLoading(null);
+    if (!res.ok) {
+      alert(data.error || "Erro ao anexar termo assinado");
+      return;
+    }
+    load();
+  }
+
   async function updatePaymentStatus(id: string, paymentStatus: string) {
     await fetch(`/api/financeiro/${id}`, {
       method: "PATCH",
@@ -230,13 +254,14 @@ export function FinanceiroClient() {
     () =>
       applyViewPipeline(rows, activeView, {
         searchText: (f) =>
-          [f.ambassador.fullName, f.ambassador.instagram, f.ambassador.email, f.paymentStatus]
+          [displayName(f.ambassador), f.ambassador.fullName, f.ambassador.instagram, f.ambassador.email, f.paymentStatus]
             .filter(Boolean)
             .join(" "),
         getFilterStatus: (f) => f.paymentStatus,
         defaultSortKey: "name",
         sorters: {
-          name: (a, b) => a.ambassador.fullName.localeCompare(b.ambassador.fullName, "pt-BR"),
+          name: (a, b) =>
+            displayName(a.ambassador).localeCompare(displayName(b.ambassador), "pt-BR"),
           pct: (a, b) => a.pctDelivered - b.pctDelivered,
           amount: (a, b) => (a.amountDue ?? 0) - (b.amountDue ?? 0),
           status: (a, b) => a.paymentStatus.localeCompare(b.paymentStatus, "pt-BR"),
@@ -252,8 +277,14 @@ export function FinanceiroClient() {
     onGenerateTermo: generateTermo,
     onEditTermoData: openTermoModal,
     onEditValue: openValueModal,
+    onUploadSignedTermo: uploadSignedTermo,
     onNotesChanged: load,
   };
+
+  const boardColumns = useMemo(
+    () => boardColumnOptionsFor("financeiro", activeView.groupBy),
+    [activeView.groupBy]
+  );
 
   return (
     <div className="space-y-4">
@@ -275,6 +306,7 @@ export function FinanceiroClient() {
         onAddView={addView}
         onUpdateView={updateView}
         onRemoveView={removeView}
+        boardColumnOptions={activeView.type === "board" ? boardColumns : undefined}
       />
 
       {activeView.type === "table" && (
@@ -287,6 +319,9 @@ export function FinanceiroClient() {
         <FinanceiroBoardView
           items={filtered}
           groupBy={activeView.groupBy}
+          columnOrder={activeView.groupOrder}
+          hiddenColumnKeys={activeView.hiddenGroups}
+          onColumnOrderChange={(order) => updateView(activeView.id, { groupOrder: order })}
           onMove={updatePaymentStatus}
           {...cardProps}
         />
@@ -294,11 +329,13 @@ export function FinanceiroClient() {
 
       <FinanceEmailModal
         open={!!emailModal}
-        action={emailModal?.action || ""}
-        subject={emailModal?.subject || ""}
-        html={emailModal?.html || ""}
-        recipient={emailModal?.recipient || ""}
-        termLink={emailModal?.termLink}
+        {...(emailModal || {
+          financeId: "",
+          action: "",
+          subject: "",
+          html: "",
+          recipient: "",
+        })}
         sending={loading?.endsWith("send") || false}
         onClose={() => setEmailModal(null)}
         onSend={confirmEmailSend}

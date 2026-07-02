@@ -14,10 +14,8 @@ export function groupItems<T>(
     const result: Array<{ key: string; items: T[] }> = [];
     const seen = new Set<string>();
     for (const k of orderedKeys) {
-      if (map.has(k)) {
-        result.push({ key: k, items: map.get(k)! });
-        seen.add(k);
-      }
+      result.push({ key: k, items: map.get(k) || [] });
+      seen.add(k);
     }
     for (const [key, group] of map) {
       if (!seen.has(key)) result.push({ key, items: group });

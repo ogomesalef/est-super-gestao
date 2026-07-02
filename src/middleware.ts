@@ -4,6 +4,9 @@ import type { NextRequest } from "next/server";
 const PUBLIC = [
   "/login",
   "/c/",
+  "/p/",
+  "/r/",
+  "/relatorios",
   "/api/auth/login",
   "/api/auth/logout",
   "/api/auth/google",
@@ -11,7 +14,10 @@ const PUBLIC = [
   "/api/gmail/callback",
   "/api/contatos",
   "/api/entregas/webhook",
+  "/api/candidaturas/webhook",
   "/api/public/",
+  "/api/instagram/avatar/",
+  "/materiais/",
 ];
 
 export function middleware(request: NextRequest) {

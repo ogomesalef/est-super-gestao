@@ -13,6 +13,7 @@ export type AmbassadorPartnership = {
   startDate: string | null;
   endDate: string | null;
   proposalSentAt: string | null;
+  proposalReminderSentAt: string | null;
   formalizationSentAt: string | null;
   legalCpf: string | null;
   legalAddress: string | null;
@@ -74,12 +75,19 @@ export type AmbassadorProfile = {
   id: string;
   program: string;
   fullName: string;
+  socialName: string | null;
   email: string | null;
   whatsapp: string | null;
   instagram: string;
   tiktok: string | null;
   youtube: string | null;
   status: string;
+  source: string | null;
+  applicationReceivedAt: string | null;
+  needsReview: boolean;
+  applicationFormData: Record<string, string> | null;
+  respostasSheetName: string | null;
+  respostasSheetRow: number | null;
   alerts: string | null;
   quickNotes: import("@/lib/ambassador-quick-notes").AmbassadorQuickNote[];
   createdAt: string;

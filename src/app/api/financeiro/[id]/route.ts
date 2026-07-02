@@ -19,6 +19,7 @@ function pickFinancePatch(body: Record<string, unknown>) {
     "termDocLink",
     "termActivity",
     "termSigned",
+    "signedTermLink",
     "financeFormOk",
     "paymentSent",
     "log",

@@ -12,6 +12,7 @@ import {
   fetchEntregasHeaders,
   fetchEntregasRowsFrom,
   fetchSheetLastRow,
+  isSheetsSyncConfigured,
   superSpreadsheetId,
 } from "./google-sheets";
 import { isTodayBr, normalizeHandle } from "./utils";
@@ -166,16 +167,16 @@ export async function syncDeliveriesFromSheet(
   let mode: DeliverySyncResult["mode"];
   let startRow: number;
   let todayOnly = false;
-  let sheetLastRow = state.lastRow;
+  let sheetLastRow: number;
 
   if (full) {
     mode = "full";
     startRow = 2;
-    const col = await fetchSheetLastRow(spreadsheetId, sheetName);
-    sheetLastRow = col;
+    sheetLastRow = await fetchSheetLastRow(spreadsheetId, sheetName);
   } else if (state.lastRow >= 2) {
     mode = "incremental";
     startRow = state.lastRow + 1;
+    sheetLastRow = await fetchSheetLastRow(spreadsheetId, sheetName);
   } else {
     mode = "bootstrap_today";
     todayOnly = true;
@@ -296,9 +297,172 @@ export async function syncDeliveriesFromSheet(
   };
 }
 
+export type DeliveryPreviewRow = {
+  rowNumber: number;
+  sheetSyncKey: string;
+  status: "skipped" | "new" | "would_update";
+  program?: string;
+  instagram?: string;
+  fullName?: string | null;
+  deliveryType?: string | null;
+  monthRef?: string | null;
+  postedAt?: string | null;
+  ambassadorId?: string | null;
+  ambassadorName?: string | null;
+  needsReview?: boolean;
+};
+
+export type DeliveryPreviewResult = {
+  spreadsheetId: string;
+  sheetName: string;
+  mode: "incremental" | "bootstrap_today" | "noop";
+  lastRow: number;
+  sheetLastRow: number;
+  pendingRows: number;
+  startRow: number;
+  rows: DeliveryPreviewRow[];
+  wouldCreate: number;
+  wouldUpdate: number;
+  skipped: number;
+  unassigned: number;
+};
+
+export async function previewDeliveriesFromSheet(): Promise<DeliveryPreviewResult> {
+  const spreadsheetId = superSpreadsheetId();
+  const sheetName = entregasSheetName();
+  const state = await getEntregasSyncState(spreadsheetId, sheetName);
+  const sheetLastRow = await fetchSheetLastRow(spreadsheetId, sheetName);
+
+  let mode: DeliveryPreviewResult["mode"];
+  let startRow: number;
+
+  if (state.lastRow >= 2) {
+    mode = "incremental";
+    startRow = state.lastRow + 1;
+  } else {
+    mode = "bootstrap_today";
+    startRow = Math.max(2, sheetLastRow - BOOTSTRAP_TAIL_ROWS + 1);
+  }
+
+  const pendingRows = Math.max(0, sheetLastRow - state.lastRow);
+
+  if (sheetLastRow < 2 || startRow > sheetLastRow) {
+    return {
+      spreadsheetId,
+      sheetName,
+      mode: "noop",
+      lastRow: state.lastRow,
+      sheetLastRow,
+      pendingRows: 0,
+      startRow,
+      rows: [],
+      wouldCreate: 0,
+      wouldUpdate: 0,
+      skipped: 0,
+      unassigned: 0,
+    };
+  }
+
+  const [headers, dataRows] = await Promise.all([
+    fetchEntregasHeaders(spreadsheetId, sheetName),
+    fetchEntregasRowsFrom(spreadsheetId, sheetName, startRow),
+  ]);
+
+  const cache: AmbassadorCache = new Map();
+  const rows: DeliveryPreviewRow[] = [];
+  let wouldCreate = 0;
+  let wouldUpdate = 0;
+  let skipped = 0;
+  let unassigned = 0;
+
+  for (let i = 0; i < dataRows.length; i++) {
+    const row = sheetRowToObject(headers, dataRows[i]);
+    const rowNumber = startRow + i;
+    const sheetSyncKey = buildSheetSyncKey(spreadsheetId, sheetName, rowNumber);
+    const parsed = parseDeliverySheetRow(row);
+
+    if (!parsed) {
+      skipped++;
+      rows.push({ rowNumber, sheetSyncKey, status: "skipped" });
+      continue;
+    }
+
+    const existing = await prisma.delivery.findUnique({ where: { sheetSyncKey } });
+    let ambassadorId: string | null = null;
+    if (existing?.ambassadorId && !existing.needsReview) {
+      ambassadorId = existing.ambassadorId;
+    } else {
+      ambassadorId = await resolveAmbassadorId(
+        parsed.program,
+        parsed.instagram,
+        parsed.fullName,
+        parsed.email,
+        cache
+      );
+    }
+
+    const needsReview = !ambassadorId;
+    if (needsReview) unassigned++;
+
+    let ambassadorName: string | null = null;
+    if (ambassadorId) {
+      const amb = await prisma.ambassador.findUnique({
+        where: { id: ambassadorId },
+        select: { fullName: true },
+      });
+      ambassadorName = amb?.fullName ?? null;
+    }
+
+    const status = existing ? "would_update" : "new";
+    if (status === "new") wouldCreate++;
+    else wouldUpdate++;
+
+    rows.push({
+      rowNumber,
+      sheetSyncKey,
+      status,
+      program: parsed.program,
+      instagram: parsed.instagram,
+      fullName: parsed.fullName,
+      deliveryType: parsed.deliveryType,
+      monthRef: parsed.monthRef,
+      postedAt: parsed.postedAt?.toISOString() ?? null,
+      ambassadorId,
+      ambassadorName,
+      needsReview,
+    });
+  }
+
+  return {
+    spreadsheetId,
+    sheetName,
+    mode,
+    lastRow: state.lastRow,
+    sheetLastRow,
+    pendingRows,
+    startRow,
+    rows,
+    wouldCreate,
+    wouldUpdate,
+    skipped,
+    unassigned,
+  };
+}
+
 export async function getDeliveriesSyncStatus() {
   const spreadsheetId = superSpreadsheetId();
   const sheetName = entregasSheetName();
   const state = await getEntregasSyncState(spreadsheetId, sheetName);
-  return { spreadsheetId, sheetName, ...state };
+
+  if (!isSheetsSyncConfigured()) {
+    return { spreadsheetId, sheetName, ...state, sheetLastRow: null, pendingRows: null };
+  }
+
+  try {
+    const sheetLastRow = await fetchSheetLastRow(spreadsheetId, sheetName);
+    const pendingRows = Math.max(0, sheetLastRow - state.lastRow);
+    return { spreadsheetId, sheetName, ...state, sheetLastRow, pendingRows };
+  } catch {
+    return { spreadsheetId, sheetName, ...state, sheetLastRow: null, pendingRows: null };
+  }
 }

@@ -5,6 +5,8 @@ import { ChevronRight } from "lucide-react";
 import { Badge, TableHead, TableRow, Td, TableShell, Textarea, Th } from "@/components/ui";
 import { VerticalBadge } from "@/components/vertical-badge";
 import { NotionPill, groupHeaderColor } from "@/components/views/notion-pill";
+import { DragBoard } from "@/components/views/drag-board";
+import { resolveGroupOrder } from "@/lib/view-system/group-order";
 import { groupItems } from "@/lib/view-system/group";
 import type { GroupByKey } from "@/lib/view-system/types";
 import { verticalRowClass } from "@/lib/vertical-styles";
@@ -15,6 +17,7 @@ import {
   QuickNoteContextTarget,
 } from "@/components/ambassador/ambassador-quick-notes";
 import { DELIVERY_STATUSES, deliveryStatus, type EntregaControl } from "./types";
+import { displayName } from "@/lib/ambassador-name";
 
 function getGroupKey(item: EntregaControl, groupBy: GroupByKey): string {
   if (groupBy === "status") return deliveryStatus(item);
@@ -129,7 +132,7 @@ export function EntregasTableView({
                       <Td>
                         <QuickNoteContextTarget
                           ambassadorId={c.ambassador.id}
-                          ambassadorName={c.ambassador.fullName}
+                          ambassadorName={displayName(c.ambassador)}
                           onChanged={onNotesChanged}
                         >
                           <AmbassadorNameLink
@@ -137,7 +140,7 @@ export function EntregasTableView({
                             onNotesChanged={onNotesChanged}
                             contextMenu={false}
                           >
-                            {c.ambassador.fullName}
+                            {displayName(c.ambassador)}
                           </AmbassadorNameLink>
                           <QuickNoteCardBadges notes={c.ambassador.quickNotes} />
                         </QuickNoteContextTarget>
@@ -214,7 +217,7 @@ export function EntregasGalleryView({
               <QuickNoteContextTarget
                 key={c.id}
                 ambassadorId={c.ambassador.id}
-                ambassadorName={c.ambassador.fullName}
+                ambassadorName={displayName(c.ambassador)}
                 onChanged={onNotesChanged}
               >
                 <div className="overflow-hidden rounded-xl border border-hairline bg-white shadow-soft">
@@ -230,7 +233,7 @@ export function EntregasGalleryView({
                           onNotesChanged={onNotesChanged}
                           contextMenu={false}
                         >
-                          {c.ambassador.fullName}
+                          {displayName(c.ambassador)}
                         </AmbassadorNameLink>
                         <p className="text-sm text-muted-foreground">{c.ambassador.instagram}</p>
                       </div>
@@ -272,71 +275,64 @@ export function EntregasGalleryView({
 export function EntregasBoardView({
   items,
   groupBy,
+  columnOrder,
+  hiddenColumnKeys,
+  onColumnOrderChange,
   onNotesChanged,
 }: {
   items: EntregaControl[];
   groupBy: GroupByKey;
+  columnOrder?: string[];
+  hiddenColumnKeys?: string[];
+  onColumnOrderChange?: (order: string[]) => void;
   onNotesChanged?: () => void;
 }) {
   const effectiveGroupBy = groupBy === "none" ? "status" : groupBy;
-  const groups = groupItems(
-    items,
-    (i) => getGroupKey(i, effectiveGroupBy),
-    orderedKeys(effectiveGroupBy)
-  );
+  const defaultKeys = orderedKeys(effectiveGroupBy);
+  const order = defaultKeys ? resolveGroupOrder(defaultKeys, columnOrder) : undefined;
+  const groups = groupItems(items, (i) => getGroupKey(i, effectiveGroupBy), order);
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {groups.map((group) => (
-        <div key={group.key} className="w-72 shrink-0 rounded-xl bg-surface/60 p-2">
-          <div className="mb-2 flex items-center gap-2 px-1">
-            <span
-              className={cn(
-                "rounded px-2 py-0.5 text-xs font-semibold",
-                groupHeaderColor(group.key, effectiveGroupBy)
-              )}
+    <DragBoard
+      groups={groups.map((g) => ({ key: g.key, items: g.items }))}
+      groupBy={effectiveGroupBy}
+      defaultColumnOrder={defaultKeys}
+      columnOrder={columnOrder}
+      hiddenColumnKeys={hiddenColumnKeys}
+      onColumnOrderChange={onColumnOrderChange}
+      getItemId={(c) => c.id}
+      renderCard={(c) => (
+        <QuickNoteContextTarget
+          ambassadorId={c.ambassador.id}
+          ambassadorName={displayName(c.ambassador)}
+          onChanged={onNotesChanged}
+        >
+          <div className="rounded-lg border border-hairline bg-white p-3 shadow-soft">
+            <AmbassadorNameLink
+              id={c.ambassador.id}
+              className="truncate text-sm"
+              stopPropagation
+              onNotesChanged={onNotesChanged}
+              contextMenu={false}
             >
-              {group.key}
-            </span>
-            <span className="text-xs text-muted-foreground">{group.items.length}</span>
+              {displayName(c.ambassador)}
+            </AmbassadorNameLink>
+            <p className="truncate text-xs text-muted-foreground">{c.ambassador.instagram}</p>
+            <QuickNoteCardBadges notes={c.ambassador.quickNotes} />
+            <div className="mt-2 flex flex-wrap gap-1">
+              <span className="rounded bg-surface px-1.5 py-0.5 text-xs tabular">
+                {c.pctDelivered.toFixed(0)}%
+              </span>
+              <Badge variant={c.statusFeed === "OK" ? "success" : "warning"}>
+                F {c.deliveredFeed}/{c.metaFeed}
+              </Badge>
+              <Badge variant={c.statusStories === "OK" ? "success" : "warning"}>
+                S {c.deliveredStories}/{c.metaStories}
+              </Badge>
+            </div>
           </div>
-          <div className="min-h-[120px] space-y-2">
-            {group.items.map((c) => (
-              <QuickNoteContextTarget
-                key={c.id}
-                ambassadorId={c.ambassador.id}
-                ambassadorName={c.ambassador.fullName}
-                onChanged={onNotesChanged}
-              >
-                <div className="rounded-lg border border-hairline bg-white p-3 shadow-soft">
-                  <AmbassadorNameLink
-                    id={c.ambassador.id}
-                    className="truncate text-sm"
-                    stopPropagation
-                    onNotesChanged={onNotesChanged}
-                    contextMenu={false}
-                  >
-                    {c.ambassador.fullName}
-                  </AmbassadorNameLink>
-                  <p className="truncate text-xs text-muted-foreground">{c.ambassador.instagram}</p>
-                  <QuickNoteCardBadges notes={c.ambassador.quickNotes} />
-                  <div className="mt-2 flex flex-wrap gap-1">
-                  <span className="rounded bg-surface px-1.5 py-0.5 text-xs tabular">
-                    {c.pctDelivered.toFixed(0)}%
-                  </span>
-                  <Badge variant={c.statusFeed === "OK" ? "success" : "warning"}>
-                    F {c.deliveredFeed}/{c.metaFeed}
-                  </Badge>
-                  <Badge variant={c.statusStories === "OK" ? "success" : "warning"}>
-                    S {c.deliveredStories}/{c.metaStories}
-                  </Badge>
-                </div>
-              </div>
-              </QuickNoteContextTarget>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+        </QuickNoteContextTarget>
+      )}
+    />
   );
 }

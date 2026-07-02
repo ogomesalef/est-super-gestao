@@ -6,10 +6,12 @@ import { VerticalBadge } from "@/components/vertical-badge";
 import { normalizeHandle } from "@/lib/utils";
 import { Loader2, Search, UserPlus, X } from "lucide-react";
 import type { PostDelivery } from "./types";
+import { displayName } from "@/lib/ambassador-name";
 
 type AmbassadorOption = {
   id: string;
   fullName: string;
+  socialName?: string | null;
   instagram: string;
   program: string;
 };
@@ -49,6 +51,7 @@ export function AssignDeliveryModal({
     if (q) {
       list = ambassadors.filter(
         (a) =>
+          displayName(a).toLowerCase().includes(q) ||
           a.fullName.toLowerCase().includes(q) ||
           a.instagram.toLowerCase().includes(q) ||
           a.program.toLowerCase().includes(q)
@@ -59,7 +62,7 @@ export function AssignDeliveryModal({
         const aMatch = normalizeHandle(a.instagram) === postIg && postIg !== "@";
         const bMatch = normalizeHandle(b.instagram) === postIg && postIg !== "@";
         if (aMatch !== bMatch) return aMatch ? -1 : 1;
-        return a.fullName.localeCompare(b.fullName, "pt-BR");
+        return displayName(a).localeCompare(displayName(b), "pt-BR");
       })
       .slice(0, 40);
   }, [ambassadors, query, postIg]);
@@ -117,7 +120,7 @@ export function AssignDeliveryModal({
                   className="flex w-full items-center justify-between gap-2 rounded-lg border border-hairline px-3 py-2 text-left text-sm hover:bg-surface disabled:opacity-50"
                 >
                   <span className="min-w-0">
-                    <strong>{a.fullName}</strong>
+                    <strong>{displayName(a)}</strong>
                     <span className="ml-2 text-muted-foreground">{a.instagram}</span>
                     {normalizeHandle(a.instagram) === postIg && postIg !== "@" && (
                       <span className="ml-2 text-xs font-medium text-primary">@ bate</span>

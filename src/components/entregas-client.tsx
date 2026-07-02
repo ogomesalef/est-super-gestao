@@ -5,6 +5,7 @@ import { Input } from "@/components/ui";
 import { currentMonthRef } from "@/lib/utils";
 import { useVertical } from "@/components/vertical-context";
 import { useSavedViews } from "@/lib/view-system/use-saved-views";
+import { boardColumnOptionsFor } from "@/lib/view-system/board-columns";
 import { applyViewPipeline } from "@/lib/view-system/apply-view";
 import type { FilterOption, GroupByKey, SortOption } from "@/lib/view-system/types";
 import { ViewToolbar } from "@/components/views/view-toolbar";
@@ -14,6 +15,7 @@ import {
   EntregasTableView,
 } from "@/components/entregas/entregas-views";
 import { DELIVERY_STATUSES, deliveryStatus, type EntregaControl } from "@/components/entregas/types";
+import { displayName } from "@/lib/ambassador-name";
 
 const GROUP_OPTIONS: { key: GroupByKey; label: string }[] = [
   { key: "none", label: "Nenhum" },
@@ -67,11 +69,14 @@ export function EntregasClient() {
     () =>
       applyViewPipeline(controls, activeView, {
         searchText: (c) =>
-          [c.ambassador.fullName, c.ambassador.instagram, c.notes].filter(Boolean).join(" "),
+          [displayName(c.ambassador), c.ambassador.fullName, c.ambassador.instagram, c.notes]
+            .filter(Boolean)
+            .join(" "),
         getFilterStatus: deliveryStatus,
         defaultSortKey: "name",
         sorters: {
-          name: (a, b) => a.ambassador.fullName.localeCompare(b.ambassador.fullName, "pt-BR"),
+          name: (a, b) =>
+            displayName(a.ambassador).localeCompare(displayName(b.ambassador), "pt-BR"),
           pct: (a, b) => a.pctDelivered - b.pctDelivered,
           status: (a, b) => deliveryStatus(a).localeCompare(deliveryStatus(b), "pt-BR"),
         },
@@ -80,6 +85,10 @@ export function EntregasClient() {
   );
 
   const pending = controls.filter((c) => deliveryStatus(c) === "Pendente");
+  const boardColumns = useMemo(
+    () => boardColumnOptionsFor("entregas", activeView.groupBy),
+    [activeView.groupBy]
+  );
 
   return (
     <div className="space-y-4">
@@ -101,6 +110,7 @@ export function EntregasClient() {
         onAddView={addView}
         onUpdateView={updateView}
         onRemoveView={removeView}
+        boardColumnOptions={activeView.type === "board" ? boardColumns : undefined}
       />
 
       {activeView.type === "table" && (
@@ -115,7 +125,14 @@ export function EntregasClient() {
         <EntregasGalleryView items={filtered} groupBy={activeView.groupBy} onNotesChanged={load} />
       )}
       {activeView.type === "board" && (
-        <EntregasBoardView items={filtered} groupBy={activeView.groupBy} onNotesChanged={load} />
+        <EntregasBoardView
+          items={filtered}
+          groupBy={activeView.groupBy}
+          columnOrder={activeView.groupOrder}
+          hiddenColumnKeys={activeView.hiddenGroups}
+          onColumnOrderChange={(order) => updateView(activeView.id, { groupOrder: order })}
+          onNotesChanged={load}
+        />
       )}
     </div>
   );

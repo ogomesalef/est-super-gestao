@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { serializeQuickNote } from "@/lib/ambassador-quick-notes";
+import { parseApplicationFormData } from "@/lib/respostas-row";
 
 function serializeDate(d: Date | null | undefined): string | null {
   return d ? d.toISOString() : null;
@@ -34,12 +35,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     id: ambassador.id,
     program: ambassador.program,
     fullName: ambassador.fullName,
+    socialName: ambassador.socialName,
     email: ambassador.email,
     whatsapp: ambassador.whatsapp,
     instagram: ambassador.instagram,
     tiktok: ambassador.tiktok,
     youtube: ambassador.youtube,
     status: ambassador.status,
+    source: ambassador.source,
+    applicationReceivedAt: serializeDate(ambassador.applicationReceivedAt),
+    applicationFormData: parseApplicationFormData(ambassador.applicationFormData),
+    respostasSheetName: ambassador.respostasSheetName,
+    respostasSheetRow: ambassador.respostasSheetRow,
+    needsReview: ambassador.needsReview,
     alerts: ambassador.alerts,
     quickNotes: ambassador.quickNotes.map(serializeQuickNote),
     gmailThreadId: ambassador.gmailThreadId,
@@ -61,6 +69,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           startDate: serializeDate(p.startDate),
           endDate: serializeDate(p.endDate),
           proposalSentAt: serializeDate(p.proposalSentAt),
+          proposalReminderSentAt: serializeDate(p.proposalReminderSentAt),
           formalizationSentAt: serializeDate(p.formalizationSentAt),
           legalCpf: p.legalCpf,
           legalAddress: p.legalAddress,
@@ -122,5 +131,41 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       sentAt: serializeDate(e.sentAt),
       createdAt: e.createdAt.toISOString(),
     })),
+  });
+}
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const body = await req.json();
+
+  const data: {
+    fullName?: string;
+    socialName?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
+    alerts?: string | null;
+  } = {};
+
+  if (body.fullName !== undefined) data.fullName = String(body.fullName).trim();
+  if (body.socialName !== undefined) {
+    const trimmed = String(body.socialName || "").trim();
+    data.socialName = trimmed || null;
+  }
+  if (body.email !== undefined) data.email = body.email || null;
+  if (body.whatsapp !== undefined) data.whatsapp = body.whatsapp || null;
+  if (body.alerts !== undefined) data.alerts = body.alerts || null;
+
+  const ambassador = await prisma.ambassador.update({
+    where: { id },
+    data,
+  });
+
+  return NextResponse.json({
+    id: ambassador.id,
+    fullName: ambassador.fullName,
+    socialName: ambassador.socialName,
+    email: ambassador.email,
+    whatsapp: ambassador.whatsapp,
+    alerts: ambassador.alerts,
   });
 }

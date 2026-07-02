@@ -4,6 +4,8 @@
  */
 import * as XLSX from "xlsx";
 import { prisma } from "../src/lib/prisma";
+import { upsertAmbassadorFromRespostas } from "../src/lib/candidaturas-sync";
+import { parseRespostasSheetRow } from "../src/lib/respostas-row";
 import {
   normalizeHandle,
   parseBool,
@@ -31,13 +33,15 @@ function pick(row: Record<string, unknown>, ...keys: string[]): unknown {
 async function upsertAmbassador(
   program: string,
   row: Record<string, unknown>,
-  defaults: { status?: string } = {}
+  defaults: { status?: string; fromForm?: boolean } = {}
 ) {
   const instagram = normalizeHandle(String(pick(row, "Instagram", "INSTAGRAM", "Seu Instagram (@)") || ""));
   if (!instagram || instagram === "@") return null;
 
   const fullName = String(pick(row, "Nome completo", "NOME", "Nome") || instagram);
   const email = String(pick(row, "E-mail", "E-mail", "email") || "") || null;
+  const now = new Date();
+  const fromForm = defaults.fromForm === true;
 
   const amb = await prisma.ambassador.upsert({
     where: { program_instagram: { program, instagram } },
@@ -51,6 +55,9 @@ async function upsertAmbassador(
       youtube: String(pick(row, "YouTube", "YOUTUBE") || "") || null,
       status: String(pick(row, "Status", "STATUS") || defaults.status || "Pendente"),
       alerts: String(pick(row, "OBS (Alertas)", "OBSERVAÇÕES") || "") || null,
+      source: fromForm ? "import" : undefined,
+      needsReview: fromForm,
+      applicationReceivedAt: fromForm ? now : undefined,
       partnership: {
         create: {
           modality: String(pick(row, "Modalidade da parceria", "MODALIDADE") || "") || null,
@@ -71,9 +78,17 @@ async function upsertAmbassador(
       fullName,
       email,
       status: String(pick(row, "Status", "STATUS") || "") || undefined,
+      ...(fromForm
+        ? {
+            needsReview: true,
+            applicationReceivedAt: now,
+            source: "import",
+          }
+        : {}),
     },
     include: { partnership: true },
   });
+
   return amb;
 }
 
@@ -120,7 +135,26 @@ async function main() {
     ["Respostas ECJ", "ECJ"],
   ] as const) {
     for (const row of sheetRows(wb, sheet)) {
-      const amb = await upsertAmbassador(program, row, { status: sheet.startsWith("BASE") ? "Ativo" : "Pendente" });
+      const isRespostas = sheet.startsWith("Respostas");
+      if (isRespostas) {
+        const sheetRow: Record<string, string> = {};
+        for (const [k, v] of Object.entries(row)) {
+          sheetRow[k] = String(v ?? "");
+        }
+        const parsed = parseRespostasSheetRow(sheetRow, program);
+        if (!parsed) continue;
+        await upsertAmbassadorFromRespostas(parsed, {
+          source: "import",
+          respostasSheetName: sheet,
+          markNeedsReview: parsed.status === "Pendente",
+        });
+        stats.ambassadors++;
+        continue;
+      }
+      const amb = await upsertAmbassador(program, row, {
+        status: sheet.startsWith("BASE") ? "Ativo" : "Pendente",
+        fromForm: false,
+      });
       if (amb) stats.ambassadors++;
     }
   }

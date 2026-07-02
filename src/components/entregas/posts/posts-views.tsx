@@ -5,11 +5,14 @@ import { ChevronRight, ExternalLink } from "lucide-react";
 import { TableHead, TableRow, Td, TableShell, Th } from "@/components/ui";
 import { VerticalBadge } from "@/components/vertical-badge";
 import { NotionPill, groupHeaderColor } from "@/components/views/notion-pill";
+import { DragBoard } from "@/components/views/drag-board";
+import { resolveGroupOrder } from "@/lib/view-system/group-order";
 import { groupItems } from "@/lib/view-system/group";
 import type { GroupByKey } from "@/lib/view-system/types";
 import { POST_ASSIGNMENT_STATUSES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { AmbassadorNameLink } from "@/components/ambassador-name-link";
+import { DeliveryLinkPills } from "@/components/delivery-link-pills";
 import { AssignButton } from "./assign-delivery-modal";
 import {
   formatPostDate,
@@ -17,6 +20,7 @@ import {
   postTypeGroup,
   type PostDelivery,
 } from "./types";
+import { displayName } from "@/lib/ambassador-name";
 
 function getGroupKey(item: PostDelivery, groupBy: GroupByKey): string {
   if (groupBy === "status") return postAssignmentStatus(item);
@@ -66,34 +70,6 @@ function GroupHeader({
   );
 }
 
-function PostLinks({ post }: { post: PostDelivery }) {
-  const links = [
-    { href: post.postLink, label: "Post" },
-    { href: post.printUrl, label: "Print" },
-    { href: post.storiesPrintUrl, label: "Stories" },
-    { href: post.videoLink, label: "Vídeo" },
-  ].filter((l) => l.href);
-
-  if (!links.length) return <span className="text-muted-foreground">—</span>;
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {links.map((l) => (
-        <a
-          key={l.label}
-          href={l.href!}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/15"
-        >
-          {l.label}
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      ))}
-    </div>
-  );
-}
-
 function PostRowCells({
   post,
   onAssign,
@@ -112,7 +88,7 @@ function PostRowCells({
       <Td className={cn(unassigned && "bg-amber-50/50")}>
         {post.ambassador ? (
           <AmbassadorNameLink id={post.ambassador.id}>
-            <div className="font-medium">{post.ambassador.fullName}</div>
+            <div className="font-medium">{displayName(post.ambassador)}</div>
             <div className="text-xs text-muted-foreground">{post.ambassador.instagram}</div>
           </AmbassadorNameLink>
         ) : (
@@ -127,7 +103,7 @@ function PostRowCells({
       </Td>
       <Td>{post.deliveryType || "—"}</Td>
       <Td>
-        <PostLinks post={post} />
+        <DeliveryLinkPills delivery={post} />
       </Td>
       <Td className="text-xs text-muted-foreground">{post.campaignName || "—"}</Td>
       <Td>
@@ -253,7 +229,7 @@ export function PostsGalleryView({
                         {formatPostDate(post.postedAt || post.submittedAt)} · {post.monthRef}
                       </div>
                       <div className="font-medium">
-                        {post.ambassador?.fullName || post.fullName || "—"}
+                        {post.ambassador ? displayName(post.ambassador) : post.fullName || "—"}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {post.ambassador?.instagram || post.instagram}
@@ -262,7 +238,7 @@ export function PostsGalleryView({
                     <VerticalBadge vertical={post.program || "OAB"} />
                   </div>
                   <p className="mb-2 text-sm">{post.deliveryType || "Tipo não informado"}</p>
-                  <PostLinks post={post} />
+                  <DeliveryLinkPills delivery={post} />
                   <div className="mt-3 flex items-center justify-between">
                     <NotionPill kind="status">{postAssignmentStatus(post)}</NotionPill>
                     <AssignButton post={post} onClick={() => onAssign(post)} compact />
@@ -280,59 +256,60 @@ export function PostsGalleryView({
 export function PostsBoardView({
   items,
   groupBy,
+  columnOrder,
+  hiddenColumnKeys,
+  onColumnOrderChange,
   onAssign,
 }: {
   items: PostDelivery[];
   groupBy: GroupByKey;
+  columnOrder?: string[];
+  hiddenColumnKeys?: string[];
+  onColumnOrderChange?: (order: string[]) => void;
   onAssign: (post: PostDelivery) => void;
 }) {
   const effectiveGroupBy = groupBy === "none" ? "status" : groupBy;
-  const groups = groupItems(items, (i) => getGroupKey(i, effectiveGroupBy), orderedKeys(effectiveGroupBy));
+  const defaultKeys = orderedKeys(effectiveGroupBy);
+  const order = defaultKeys ? resolveGroupOrder(defaultKeys, columnOrder) : undefined;
+  const groups = groupItems(items, (i) => getGroupKey(i, effectiveGroupBy), order);
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
-      {groups.map((group) => {
-        const highlight = group.key === "Sem atribuição";
+    <DragBoard
+      groups={groups.map((g) => ({
+        key: g.key,
+        items: g.items,
+        styleAs: g.key,
+      }))}
+      groupBy={effectiveGroupBy}
+      defaultColumnOrder={defaultKeys}
+      columnOrder={columnOrder}
+      hiddenColumnKeys={hiddenColumnKeys}
+      onColumnOrderChange={onColumnOrderChange}
+      columnClassName="min-w-[17rem] flex-1"
+      getItemId={(post) => post.id}
+      renderCard={(post) => {
+        const highlight = postAssignmentStatus(post) === "Sem atribuição";
         return (
           <div
-            key={group.key}
             className={cn(
-              "min-w-[17rem] flex-1 rounded-xl border p-3",
-              highlight ? "border-amber-300 bg-amber-50/30" : "border-hairline bg-surface/30"
+              "rounded-lg border bg-white p-3 shadow-hairline",
+              highlight && "border-amber-200"
             )}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <span className={cn("text-sm font-medium", highlight && "text-amber-900")}>
-                {group.key}
-              </span>
-              <span className="text-xs text-muted-foreground">{group.items.length}</span>
+            <div className="text-xs text-muted-foreground">
+              {formatPostDate(post.postedAt || post.submittedAt)}
             </div>
-            <div className="space-y-2">
-              {group.items.map((post) => (
-                <div
-                  key={post.id}
-                  className={cn(
-                    "rounded-lg border bg-white p-3 shadow-hairline",
-                    highlight && "border-amber-200"
-                  )}
-                >
-                  <div className="text-xs text-muted-foreground">
-                    {formatPostDate(post.postedAt || post.submittedAt)}
-                  </div>
-                  <div className="font-medium text-sm">
-                    {post.ambassador?.fullName || post.fullName || "—"}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{post.deliveryType}</div>
-                  <div className="mt-2 flex justify-between">
-                    <VerticalBadge vertical={post.program || "OAB"} />
-                    <AssignButton post={post} onClick={() => onAssign(post)} compact />
-                  </div>
-                </div>
-              ))}
+            <div className="text-sm font-medium">
+              {post.ambassador ? displayName(post.ambassador) : post.fullName || "—"}
+            </div>
+            <div className="text-xs text-muted-foreground">{post.deliveryType}</div>
+            <div className="mt-2 flex justify-between">
+              <VerticalBadge vertical={post.program || "OAB"} />
+              <AssignButton post={post} onClick={() => onAssign(post)} compact />
             </div>
           </div>
         );
-      })}
-    </div>
+      }}
+    />
   );
 }

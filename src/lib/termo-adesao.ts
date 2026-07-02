@@ -1,11 +1,16 @@
 import { getGoogleAccessToken } from "@/lib/google-oauth";
+import { uploadPdf as driveUploadPdf } from "@/lib/drive-client";
+import {
+  buildUnsignedTermBaseName,
+  getTermosRootFolderId,
+  resolvePersonFolder,
+} from "@/lib/termo-folders";
 import { buildTermoReplacements } from "@/lib/termo-data";
 import type { Ambassador, MonthlyControl, MonthlyFinance, Partnership } from "@prisma/client";
 
 const TEMPLATE_DOC_ID =
   process.env.TERM_TEMPLATE_DOC_ID || "1CnGLIh3CvVv3agBLH582Rp1WfYusABnxPgM_eQSmhlU";
-const ROOT_FOLDER_ID =
-  process.env.DRIVE_ROOT_TERMOS_ID || "1dSGeahfd6eyA3FBKN7L_BbwK-bxYY8Vp";
+const ROOT_FOLDER_ID = getTermosRootFolderId();
 
 const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
 
@@ -14,17 +19,6 @@ type FinanceBundle = MonthlyFinance & {
 };
 
 type ControlBundle = MonthlyControl | null;
-
-function sanitizePart(value: string): string {
-  return String(value || "")
-    .replace(/[/\\?%*:|"<>]/g, "-")
-    .trim();
-}
-
-function normalizeIg(ig: string): string {
-  const s = String(ig || "").trim();
-  return s.startsWith("@") ? s : `@${s}`;
-}
 
 async function driveFetch(path: string, init: RequestInit & { token: string }) {
   const { token, ...rest } = init;
@@ -79,33 +73,6 @@ async function replacePlaceholdersInDoc(
   for (let i = 0; i < replaceAllRequests.length; i += 80) {
     await docsBatchUpdate(docId, token, replaceAllRequests.slice(i, i + 80));
   }
-}
-
-async function findChildFolder(token: string, parentId: string, name: string): Promise<string | null> {
-  const q = encodeURIComponent(
-    `mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and name='${name.replace(/'/g, "\\'")}' and trashed=false`
-  );
-  const data = (await driveFetch(`/files?q=${q}&fields=files(id,name)&supportsAllDrives=true`, {
-    token,
-  })) as { files?: Array<{ id: string }> };
-  return data.files?.[0]?.id || null;
-}
-
-async function createFolder(token: string, parentId: string, name: string): Promise<string> {
-  const existing = await findChildFolder(token, parentId, name);
-  if (existing) return existing;
-
-  const data = (await driveFetch("/files?supportsAllDrives=true", {
-    token,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [parentId],
-    }),
-  })) as { id: string };
-  return data.id;
 }
 
 async function getFileMeta(
@@ -233,42 +200,6 @@ async function exportPdf(token: string, fileId: string): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
-async function uploadPdf(
-  token: string,
-  parentId: string,
-  name: string,
-  pdf: ArrayBuffer
-): Promise<{ id: string; webViewLink?: string; webContentLink?: string }> {
-  const metadata = JSON.stringify({ name, parents: [parentId], mimeType: "application/pdf" });
-  const boundary = `sg_${Date.now()}`;
-  const body = Buffer.concat([
-    Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n`),
-    Buffer.from(`--${boundary}\r\nContent-Type: application/pdf\r\n\r\n`),
-    Buffer.from(pdf),
-    Buffer.from(`\r\n--${boundary}--`),
-  ]);
-
-  const res = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink,webContentLink",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": `multipart/related; boundary=${boundary}`,
-      },
-      body,
-    }
-  );
-  const data = (await res.json()) as {
-    id?: string;
-    webViewLink?: string;
-    webContentLink?: string;
-    error?: { message?: string };
-  };
-  if (!res.ok || !data.id) throw new Error(data.error?.message || "Upload PDF falhou");
-  return data as { id: string; webViewLink?: string; webContentLink?: string };
-}
-
 async function shareReader(token: string, fileId: string, email: string) {
   await driveFetch(`/files/${fileId}/permissions?supportsAllDrives=true&sendNotificationEmail=false`, {
     token,
@@ -299,20 +230,15 @@ export async function generateTermoAdesao(
   try {
     const token = await getGoogleAccessToken();
     const amb = fin.ambassador;
-    const ig = normalizeIg(amb.instagram);
-    const monthFolderName = fin.monthRef;
-    const personFolderName = `${fin.monthRef} | ${sanitizePart(amb.program)} | ${sanitizePart(amb.fullName)} | ${sanitizePart(ig)}`;
-    const fileBaseName = `${personFolderName} | TERMO MENSAL (RPA)`;
-
-    const monthFolderId = await createFolder(token, ROOT_FOLDER_ID, monthFolderName);
-    const personFolderId = await createFolder(token, monthFolderId, personFolderName);
+    const { personFolderId, personFolderName } = await resolvePersonFolder(token, fin, amb);
+    const fileBaseName = buildUnsignedTermBaseName(personFolderName);
 
     const docId = await copyAsEditableGoogleDoc(token, TEMPLATE_DOC_ID, personFolderId, fileBaseName);
     const replacements = buildTermoReplacements(fin, control);
     await replacePlaceholdersInDoc(docId, token, replacements);
 
     const pdfBuffer = await exportPdf(token, docId);
-    const pdf = await uploadPdf(token, personFolderId, `${fileBaseName}.pdf`, pdfBuffer);
+    const pdf = await driveUploadPdf(token, personFolderId, `${fileBaseName}.pdf`, pdfBuffer);
 
     const termLink =
       pdf.webViewLink ||

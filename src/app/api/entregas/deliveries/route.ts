@@ -12,6 +12,8 @@ export async function GET(req: Request) {
     const unassignedOnly = searchParams.get("unassigned") === "1";
     const limit = Math.min(Number(searchParams.get("limit") || 500), 1000);
 
+    const orderBy = searchParams.get("orderBy") === "syncedAt" ? "syncedAt" : "submittedAt";
+
     const deliveries = await prisma.delivery.findMany({
       where: {
         ...(ambassadorId ? { ambassadorId } : {}),
@@ -25,7 +27,7 @@ export async function GET(req: Request) {
         },
         campaign: { select: { id: true, name: true } },
       },
-      orderBy: [{ submittedAt: "desc" }],
+      orderBy: [{ [orderBy]: "desc" }],
       take: limit,
     });
 

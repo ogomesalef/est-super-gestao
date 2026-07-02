@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { EMAIL_ACTIONS } from "@/lib/constants";
+import {
+  defaultSenderIdForProgram,
+  formatFromHeader,
+  getEmailSenderById,
+} from "@/lib/email-senders";
+import { buildEmailWhatsAppMessage } from "@/lib/email-whatsapp-messages";
 import { renderAmbassadorEmail } from "@/lib/email-templates";
 import { buildTestAmbassador, TEST_EMAIL_VARS } from "@/lib/email-test-fixtures";
 import { sendEmail } from "@/lib/send-email";
@@ -37,15 +43,35 @@ export async function POST(req: Request) {
     );
   }
 
+  const fromId = defaultSenderIdForProgram(program);
+  const sender = getEmailSenderById(fromId)!;
+  const whatsappMessage = buildEmailWhatsAppMessage({
+    fullName: ambassador.fullName,
+    program,
+    action: resolvedAction,
+    modality,
+    couponCode: TEST_EMAIL_VARS.couponCode,
+  });
+
   if (previewOnly) {
-    return NextResponse.json({ subject, html, action: resolvedAction });
+    return NextResponse.json({
+      subject,
+      html,
+      action: resolvedAction,
+      to,
+      fromId,
+      from: formatFromHeader(sender),
+      program,
+      whatsappMessage,
+    });
   }
 
   const result = await sendEmail({
     action: resolvedAction,
-    to,
-    subject,
-    html,
+    to: String(body.to || to).trim(),
+    subject: String(body.subject || subject).trim(),
+    html: String(body.html || html),
+    from: body.from ? String(body.from) : undefined,
     program,
   });
 
@@ -59,5 +85,6 @@ export async function POST(req: Request) {
     subject,
     action: resolvedAction,
     to,
+    whatsappMessage,
   });
 }

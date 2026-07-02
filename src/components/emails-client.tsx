@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { Button, Input, Select } from "@/components/ui";
-import { EmailPreviewModal } from "@/components/email-preview-modal";
+import { SendEmailModal, type SendEmailConfirmPayload } from "@/components/send-email-modal";
 import { EmailTestCard } from "@/components/email-test-card";
 import { ParceriaCancelamentoModal } from "@/components/parceria-cancelamento-modal";
 import { VerticalBadge } from "@/components/vertical-badge";
 import { useVertical } from "@/components/vertical-context";
-import { CANCELAMENTO_EMAIL_ACTION, EMAIL_ACTIONS } from "@/lib/constants";
+import { CANCELAMENTO_EMAIL_ACTION, COLLAB_PEDIDO_EMAIL_ACTION, EMAIL_ACTIONS, filterAmbassadorEmailActions } from "@/lib/constants";
 import { cn, currentMonthRef, formatMonthRefLong } from "@/lib/utils";
+import { displayName } from "@/lib/ambassador-name";
 
 type Ambassador = {
   id: string;
   fullName: string;
+  socialName?: string | null;
   program: string;
+  status: string;
   email: string | null;
   partnership?: {
     modality?: string | null;
@@ -31,10 +34,22 @@ export function EmailsClient() {
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [modalMeta, setModalMeta] = useState<{
+    to: string;
+    fromId?: string;
+    program: string;
+    whatsappMessage: string;
+  } | null>(null);
   const [courseName, setCourseName] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [cancellationMonthRef, setCancellationMonthRef] = useState(currentMonthRef());
+  const [campaignName, setCampaignName] = useState("");
+  const [briefingUrl, setBriefingUrl] = useState("");
+  const [dueDateDisplay, setDueDateDisplay] = useState("");
+  const [videoConcept, setVideoConcept] = useState("");
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelSaving, setCancelSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -51,26 +66,26 @@ export function EmailsClient() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/parcerias?status=Ativo&program=${vertical}`)
+    fetch(`/api/parcerias?program=${vertical}`)
       .then((r) => r.json())
       .then((list: Ambassador[]) => {
-        setAmbassadors(list);
+        const eligible = list.filter((a) =>
+          ["Ativo", "Pendente", "Proposta"].includes(a.status)
+        );
+        setAmbassadors(eligible);
         setAmbassadorId((cur) => {
-          if (cur && list.some((a) => a.id === cur)) return cur;
+          if (cur && eligible.some((a) => a.id === cur)) return cur;
           return "";
         });
       });
   }, [vertical]);
 
-  const filteredActions = EMAIL_ACTIONS.filter((a) => {
-    if (a === CANCELAMENTO_EMAIL_ACTION) return true;
-    const amb = ambassadors.find((x) => x.id === ambassadorId);
-    const mod = amb?.partnership?.modality || "Assinatura + Cupom";
-    if (mod === "Remuneração") return a.includes("Remuneração") || a === "Enviar reprovação";
-    return a.includes("Assinatura + Cupom") || a === "Enviar reprovação";
-  });
+  const filteredActions = filterAmbassadorEmailActions(
+    ambassadors.find((x) => x.id === ambassadorId)?.partnership?.modality || "Assinatura + Cupom"
+  );
 
   const isCancelAction = action === CANCELAMENTO_EMAIL_ACTION;
+  const isCollabEmailAction = action === COLLAB_PEDIDO_EMAIL_ACTION;
 
   function emailVars(amb?: Ambassador) {
     return {
@@ -79,6 +94,7 @@ export function EmailsClient() {
       releaseDate,
       productValue: amb?.partnership?.agreedValue ?? undefined,
       cancellationMonthRef: isCancelAction ? cancellationMonthRef : undefined,
+      ...(isCollabEmailAction ? { campaignName, briefingUrl, dueDateDisplay, videoConcept } : {}),
     };
   }
 
@@ -94,8 +110,8 @@ export function EmailsClient() {
     }
   }, [ambassadorId, ambassadors, action, filteredActions]);
 
-  async function preview() {
-    if (!ambassadorId) return;
+  async function prepareEmail() {
+    if (!ambassadorId) return null;
     const amb = ambassadors.find((a) => a.id === ambassadorId);
     const res = await fetch("/api/emails", {
       method: "POST",
@@ -108,21 +124,44 @@ export function EmailsClient() {
       }),
     });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Erro ao gerar e-mail");
     setSubject(data.subject);
     setHtml(data.html);
-    setPreviewOpen(true);
+    setModalMeta({
+      to: data.to || amb?.email || "",
+      fromId: data.fromId,
+      program: data.program || amb?.program || vertical,
+      whatsappMessage: data.whatsappMessage || "",
+    });
+    return data;
   }
 
-  async function send() {
-    if (!ambassadorId) return;
+  async function preview() {
+    try {
+      await prepareEmail();
+      setPreviewOpen(true);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Erro ao gerar preview");
+    }
+  }
+
+  async function openSendModal() {
     if (isCancelAction) {
       setCancelModalOpen(true);
       return;
     }
-    await doSend();
+    try {
+      await prepareEmail();
+      setSendModalOpen(true);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Erro ao preparar envio");
+    }
   }
 
-  async function doSend(finalize?: { newStatus: string; cancellationMonthRef: string }) {
+  async function doSend(
+    overrides?: SendEmailConfirmPayload,
+    finalize?: { newStatus: string; cancellationMonthRef: string }
+  ) {
     const amb = ambassadors.find((a) => a.id === ambassadorId);
     const vars = {
       ...emailVars(amb),
@@ -136,6 +175,12 @@ export function EmailsClient() {
         action,
         vars,
         finalize,
+        to: overrides?.to,
+        from: overrides?.from,
+        cc: overrides?.cc,
+        subject: overrides?.subject,
+        html: overrides?.html,
+        whatsappMessage: overrides?.whatsappMessage,
       }),
     });
     const data = await res.json();
@@ -150,10 +195,14 @@ export function EmailsClient() {
         `E-mail enviado. Status atualizado para "${data.partnershipUpdate.status}" com encerramento em ${end} (${formatMonthRefLong(data.partnershipUpdate.cancellationMonthRef)}).`
       );
       setCancelModalOpen(false);
+      setSendModalOpen(false);
+      setPreviewOpen(false);
       setAmbassadorId("");
-      fetch(`/api/parcerias?status=Ativo&program=${vertical}`)
+      fetch(`/api/parcerias?program=${vertical}`)
         .then((r) => r.json())
-        .then(setAmbassadors);
+        .then((list: Ambassador[]) =>
+          setAmbassadors(list.filter((a) => ["Ativo", "Pendente", "Proposta"].includes(a.status)))
+        );
     } else {
       alert(
         data.send?.ok
@@ -165,8 +214,15 @@ export function EmailsClient() {
 
   async function confirmCancelSend(data: { newStatus: string; cancellationMonthRef: string }) {
     setCancelSaving(true);
-    await doSend(data);
+    await doSend(undefined, data);
     setCancelSaving(false);
+  }
+
+  async function confirmSend(payload: SendEmailConfirmPayload) {
+    setSending(true);
+    await doSend(payload);
+    setSending(false);
+    setSendModalOpen(false);
   }
 
   return (
@@ -232,7 +288,7 @@ export function EmailsClient() {
           <option value="">Selecione embaixador {vertical}...</option>
           {ambassadors.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.fullName} — {a.partnership?.modality || "?"}
+              {displayName(a)} — {a.partnership?.modality || "?"}
             </option>
           ))}
         </Select>
@@ -246,10 +302,38 @@ export function EmailsClient() {
           ))}
         </Select>
 
-        {!isCancelAction && (
+        {!isCancelAction && !isCollabEmailAction && (
           <Input placeholder="Nome do curso" value={courseName} onChange={(e) => setCourseName(e.target.value)} />
         )}
-        <Input placeholder="Cupom" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+        {!isCollabEmailAction && (
+          <Input placeholder="Cupom" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+        )}
+
+        {isCollabEmailAction && (
+          <>
+            <Input
+              placeholder="Nome da campanha"
+              value={campaignName}
+              onChange={(e) => setCampaignName(e.target.value)}
+            />
+            <Input
+              placeholder="Link do briefing"
+              value={briefingUrl}
+              onChange={(e) => setBriefingUrl(e.target.value)}
+            />
+            <Input
+              placeholder="Prazo (ex.: 5 de junho)"
+              value={dueDateDisplay}
+              onChange={(e) => setDueDateDisplay(e.target.value)}
+            />
+            <textarea
+              className="min-h-[80px] w-full rounded-md border border-hairline bg-canvas px-3 py-2 text-sm"
+              placeholder="O que pedimos no vídeo"
+              value={videoConcept}
+              onChange={(e) => setVideoConcept(e.target.value)}
+            />
+          </>
+        )}
         {isCancelAction && (
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">
@@ -262,7 +346,7 @@ export function EmailsClient() {
             />
           </div>
         )}
-        {!isCancelAction && (
+        {!isCancelAction && !isCollabEmailAction && (
           <Input
             type="date"
             placeholder="Data liberação"
@@ -275,7 +359,7 @@ export function EmailsClient() {
           <Button variant="secondary" onClick={preview} disabled={!ambassadorId}>
             Preview
           </Button>
-          <Button onClick={send} disabled={!ambassadorId}>
+          <Button onClick={openSendModal} disabled={!ambassadorId}>
             Enviar
           </Button>
         </div>
@@ -285,16 +369,34 @@ export function EmailsClient() {
         </p>
       </div>
 
-      <EmailPreviewModal
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
+      <SendEmailModal
+        open={previewOpen || sendModalOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setSendModalOpen(false);
+        }}
+        sending={sending}
+        title={sendModalOpen ? "Confirmar envio" : "Preview do e-mail"}
+        actionLabel={action}
+        program={modalMeta?.program}
+        fromId={modalMeta?.fromId}
+        to={modalMeta?.to || ""}
         subject={subject}
         html={html}
+        whatsappMessage={modalMeta?.whatsappMessage || ""}
+        showSendButton={sendModalOpen}
+        onSend={(payload) => {
+          void confirmSend(payload);
+        }}
       />
 
       <ParceriaCancelamentoModal
         open={cancelModalOpen}
-        ambassadorName={ambassadors.find((a) => a.id === ambassadorId)?.fullName || ""}
+        ambassadorName={
+          ambassadors.find((a) => a.id === ambassadorId)
+            ? displayName(ambassadors.find((a) => a.id === ambassadorId)!)
+            : ""
+        }
         initialMonthRef={cancellationMonthRef}
         saving={cancelSaving}
         onClose={() => setCancelModalOpen(false)}

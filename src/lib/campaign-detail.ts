@@ -1,10 +1,13 @@
 import type { Campaign, Delivery, Ambassador } from "@prisma/client";
+import type { CampaignCollabRow } from "@/lib/campaign-collab";
+import { displayName } from "@/lib/ambassador-name";
+import { fetchCampaignCollab } from "@/lib/campaign-collab";
 import { generatePublicSlug, publicCampaignUrl } from "@/lib/campaign-public";
 import { serializeCampaign } from "@/lib/campaigns";
 import { prisma } from "@/lib/prisma";
 
 type DeliveryWithAmbassador = Delivery & {
-  ambassador: Pick<Ambassador, "id" | "fullName" | "instagram" | "program"> | null;
+  ambassador: Pick<Ambassador, "id" | "fullName" | "socialName" | "instagram" | "program"> | null;
 };
 
 export type CampaignDeliveryRow = {
@@ -21,6 +24,7 @@ export type CampaignDeliveryRow = {
   storiesPrintUrl: string | null;
   videoLink: string | null;
   driveStatus: string | null;
+  driveOrganizedIn: string | null;
   campaignDriveStatus: string | null;
   ambassador: {
     id: string;
@@ -40,13 +44,17 @@ export type CampaignDetailPayload = {
     uniqueAmbassadors: number;
     byType: Record<string, number>;
   };
+  collab: CampaignCollabRow | null;
+  selectedDeliveries: CampaignDeliveryRow[];
+  otherDeliveries: CampaignDeliveryRow[];
   deliveries: CampaignDeliveryRow[];
 };
 
 function deliveryTypeGroup(d: DeliveryWithAmbassador): string {
   const tipo = String(d.deliveryType || "").toLowerCase();
   if (tipo.includes("stories") || d.storiesPrintUrl) return "Stories";
-  if (/(feed|reels?)/i.test(tipo)) return "Feed/Reels";
+  if (/reels?/i.test(tipo)) return "Reels";
+  if (/feed/i.test(tipo)) return "Feed";
   if (/tiktok/i.test(tipo)) return "TikTok";
   if (/youtube/i.test(tipo)) return "YouTube";
   return d.deliveryType || "Outro";
@@ -67,11 +75,12 @@ function serializeDelivery(d: DeliveryWithAmbassador): CampaignDeliveryRow {
     storiesPrintUrl: d.storiesPrintUrl,
     videoLink: d.videoLink,
     driveStatus: d.driveStatus,
+    driveOrganizedIn: d.driveOrganizedIn,
     campaignDriveStatus: d.campaignDriveStatus,
     ambassador: d.ambassador
       ? {
           id: d.ambassador.id,
-          fullName: d.ambassador.fullName,
+          fullName: displayName(d.ambassador),
           instagram: d.ambassador.instagram,
           program: d.ambassador.program,
         }
@@ -120,7 +129,7 @@ async function fetchCampaignDeliveries(campaign: Campaign): Promise<CampaignDeli
       OR: [{ campaignId: campaign.id }, { campaignName: campaign.name }],
     },
     include: {
-      ambassador: { select: { id: true, fullName: true, instagram: true, program: true } },
+      ambassador: { select: { id: true, fullName: true, socialName: true, instagram: true, program: true } },
     },
     orderBy: [{ postedAt: "desc" }, { submittedAt: "desc" }],
   });
@@ -128,7 +137,38 @@ async function fetchCampaignDeliveries(campaign: Campaign): Promise<CampaignDeli
   return rows.map(serializeDelivery);
 }
 
-function buildPayload(campaign: Campaign, deliveries: CampaignDeliveryRow[], slug: string): CampaignDetailPayload {
+function splitDeliveries(
+  deliveries: CampaignDeliveryRow[],
+  selectedAmbassadorIds: Set<string>
+): { selected: CampaignDeliveryRow[]; other: CampaignDeliveryRow[] } {
+  if (selectedAmbassadorIds.size === 0) {
+    return { selected: [], other: deliveries };
+  }
+
+  const selected: CampaignDeliveryRow[] = [];
+  const other: CampaignDeliveryRow[] = [];
+
+  for (const d of deliveries) {
+    const id = d.ambassador?.id;
+    if (id && selectedAmbassadorIds.has(id)) {
+      selected.push(d);
+    } else {
+      other.push(d);
+    }
+  }
+
+  return { selected, other };
+}
+
+function buildPayload(
+  campaign: Campaign,
+  deliveries: CampaignDeliveryRow[],
+  slug: string,
+  collab: CampaignCollabRow | null
+): CampaignDetailPayload {
+  const selectedIds = new Set(collab?.assignments.map((a) => a.ambassadorId) ?? []);
+  const { selected, other } = splitDeliveries(deliveries, selectedIds);
+
   return {
     campaign: {
       ...serializeCampaign(campaign),
@@ -136,6 +176,9 @@ function buildPayload(campaign: Campaign, deliveries: CampaignDeliveryRow[], slu
       publicUrl: publicCampaignUrl(slug),
     },
     stats: buildStats(deliveries),
+    collab,
+    selectedDeliveries: selected,
+    otherDeliveries: other,
     deliveries,
   };
 }
@@ -149,7 +192,8 @@ export async function getCampaignDetailById(id: string): Promise<CampaignDetailP
   if (!refreshed) return null;
 
   const deliveries = await fetchCampaignDeliveries(refreshed);
-  return buildPayload(refreshed, deliveries, slug);
+  const collab = await fetchCampaignCollab(refreshed.id);
+  return buildPayload(refreshed, deliveries, slug, collab);
 }
 
 export async function getCampaignDetailByPublicSlug(slug: string): Promise<CampaignDetailPayload | null> {
@@ -157,7 +201,8 @@ export async function getCampaignDetailByPublicSlug(slug: string): Promise<Campa
   if (!campaign) return null;
 
   const deliveries = await fetchCampaignDeliveries(campaign);
-  return buildPayload(campaign, deliveries, slug);
+  const collab = await fetchCampaignCollab(campaign.id);
+  return buildPayload(campaign, deliveries, slug, collab);
 }
 
 export async function backfillCampaignPublicSlugs(): Promise<number> {

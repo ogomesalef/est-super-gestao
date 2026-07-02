@@ -21,6 +21,7 @@ export type PostDelivery = {
   ambassador: {
     id: string;
     fullName: string;
+    socialName?: string | null;
     instagram: string;
     program: string;
   } | null;

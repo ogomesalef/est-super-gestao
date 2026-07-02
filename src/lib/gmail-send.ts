@@ -13,7 +13,12 @@ function encodeSubject(subject: string): string {
   return `=?UTF-8?B?${Buffer.from(subject, "utf-8").toString("base64")}?=`;
 }
 
-function fromHeader(program?: string): string {
+function fromHeader(program?: string, fromOverride?: string): string {
+  if (fromOverride?.trim()) {
+    const trimmed = fromOverride.trim();
+    if (trimmed.includes("<") && trimmed.includes(">")) return trimmed;
+    return `Programa Super Embaixadores <${trimmed}>`;
+  }
   const key = program === "ECJ" ? "ECJ" : "OAB";
   const cfg = VERTICAL_CONFIG[key];
   const alias =
@@ -54,12 +59,14 @@ function buildMime({
   html,
   cc,
   program,
+  from,
 }: {
   to: string;
   subject: string;
   html: string;
   cc?: string;
   program?: string;
+  from?: string;
 }) {
   const plain =
     htmlToPlainText(html) ||
@@ -68,7 +75,7 @@ function buildMime({
   const replyTo = replyToHeader(program);
 
   const headers = [
-    `From: ${fromHeader(program)}`,
+    `From: ${fromHeader(program, from)}`,
     `To: ${to}`,
     cc ? `Cc: ${cc}` : null,
     `Reply-To: ${replyTo}`,
@@ -103,6 +110,7 @@ export async function sendViaGmail(payload: {
   html?: string;
   cc?: string;
   program?: string;
+  from?: string;
 }): Promise<{ ok: boolean; error?: string; messageId?: string }> {
   const to = payload.to?.trim();
   const subject = payload.subject?.trim();
@@ -121,6 +129,7 @@ export async function sendViaGmail(payload: {
         html,
         cc: payload.cc,
         program: payload.program,
+        from: payload.from,
       })
     );
 

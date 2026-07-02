@@ -13,6 +13,11 @@ type Stats = {
   actives: number;
   pendingDeliveries: number;
   pendingFinance: number;
+  needsReview: number;
+  staleProposals: number;
+  staleContacts: number;
+  respostasPending: number;
+  respostasSyncConfigured?: boolean;
   month: string;
 };
 
@@ -46,6 +51,45 @@ export function DashboardClient() {
           {vertical} — {vertical === "OAB" ? "Estratégia OAB" : "Carreira Jurídica"}
         </p>
         <p className="text-sm text-muted-foreground">Mês de referência: {stats.month}</p>
+      </div>
+
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Ações pendentes
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card title="Candidatos para analisar" className="border-amber-200/80 bg-amber-50/30">
+            <p className="text-3xl font-bold tabular text-amber-950">{stats.needsReview}</p>
+            <Link href="/parcerias" className="text-sm text-amber-900 hover:underline">
+              Ver em Parcerias
+            </Link>
+          </Card>
+          {stats.respostasPending > 0 && (
+            <Card title="Planilha Respostas" className="border-amber-200/80 bg-amber-50/30">
+              <p className="text-3xl font-bold tabular text-amber-950">{stats.respostasPending}</p>
+              <p className="text-xs text-amber-900/80">
+                {stats.respostasSyncConfigured
+                  ? "linhas novas aguardando sync"
+                  : "conecte Google Sheets em Parcerias"}
+              </p>
+              <Link href="/parcerias" className="text-sm text-amber-900 hover:underline">
+                Sincronizar candidaturas
+              </Link>
+            </Card>
+          )}
+          <Card title="Propostas sem retorno" className="border-orange-200/80 bg-orange-50/30">
+            <p className="text-3xl font-bold tabular text-orange-950">{stats.staleProposals}</p>
+            <Link href="/parcerias" className="text-sm text-orange-900 hover:underline">
+              Cobrar proposta
+            </Link>
+          </Card>
+          <Card title="Contatos para refazer" className="border-orange-200/80 bg-orange-50/30">
+            <p className="text-3xl font-bold tabular text-orange-950">{stats.staleContacts}</p>
+            <Link href="/contatos" className="text-sm text-orange-900 hover:underline">
+              Ver contatos
+            </Link>
+          </Card>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -6,6 +6,7 @@ import { VerticalBadge } from "@/components/vertical-badge";
 import { useVertical } from "@/components/vertical-context";
 import { VERTICALS } from "@/lib/constants";
 import { useSavedViews } from "@/lib/view-system/use-saved-views";
+import { boardColumnOptionsFor } from "@/lib/view-system/board-columns";
 import { applyViewPipeline } from "@/lib/view-system/apply-view";
 import type { FilterOption, GroupByKey, SortOption } from "@/lib/view-system/types";
 import { ViewToolbar } from "@/components/views/view-toolbar";
@@ -187,6 +188,10 @@ export function CampanhasClient() {
 
   const activeCount = list.filter((c) => c.effectiveStatus === "Ativa").length;
   const scheduledCount = list.filter((c) => c.effectiveStatus === "Agendada").length;
+  const boardColumns = useMemo(
+    () => boardColumnOptionsFor("campanhas", activeView.groupBy),
+    [activeView.groupBy]
+  );
 
   return (
     <div className="space-y-4">
@@ -326,6 +331,7 @@ export function CampanhasClient() {
         onAddView={addView}
         onUpdateView={updateView}
         onRemoveView={removeView}
+        boardColumnOptions={activeView.type === "board" ? boardColumns : undefined}
       />
 
       {activeView.type === "table" && (
@@ -352,6 +358,9 @@ export function CampanhasClient() {
         <CampanhasBoardView
           items={filtered}
           groupBy={activeView.groupBy}
+          columnOrder={activeView.groupOrder}
+          hiddenColumnKeys={activeView.hiddenGroups}
+          onColumnOrderChange={(order) => updateView(activeView.id, { groupOrder: order })}
           loading={loading}
           onEdit={openEdit}
           onGenerateFolder={generateFolder}

@@ -13,6 +13,10 @@ export type SavedView = {
   sortKey: string;
   sortDir: SortDir;
   filterStatus: string;
+  /** Ordem das colunas no quadro (arrastar cabeçalho). */
+  groupOrder?: string[];
+  /** Colunas ocultas no quadro (estilo Notion). */
+  hiddenGroups?: string[];
 };
 
 export type ViewsState = {

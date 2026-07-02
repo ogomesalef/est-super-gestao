@@ -18,10 +18,13 @@ export type FinanceiroRow = {
   log: string | null;
   termLink: string | null;
   termDocLink: string | null;
+  termSigned: boolean;
+  signedTermLink: string | null;
   termActivityAuto: string;
   ambassador: {
     id: string;
     fullName: string;
+    socialName: string | null;
     instagram: string;
     program: string;
     email: string | null;

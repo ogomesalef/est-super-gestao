@@ -17,6 +17,7 @@ export type EntregaControl = {
   ambassador: {
     id: string;
     fullName: string;
+    socialName?: string | null;
     instagram: string;
     program: string;
     quickNotes?: AmbassadorQuickNote[];

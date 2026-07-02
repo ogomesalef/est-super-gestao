@@ -1,5 +1,5 @@
 import type { Ambassador, MonthlyControl, MonthlyFinance, Partnership } from "@prisma/client";
-import { formatMesDisplay, formatMoney, formatPercent } from "@/lib/email-templates";
+import { formatMesDisplay, formatMoney, formatPercent } from "@/lib/email-formatters";
 import { firstName } from "@/lib/utils";
 
 export type TermoFinanceBundle = MonthlyFinance & {

@@ -14,11 +14,38 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const amb = await findOrCreateAmbassadorByIg(contact.vertical || "OAB", contact.instagram, {
       fullName: contact.instagram,
     });
+    await prisma.ambassador.update({
+      where: { id: amb.id },
+      data: { source: amb.source || "prospeccao" },
+    });
     await prisma.contact.update({
       where: { id },
-      data: { ambassadorId: amb.id, status: "Interessado" },
+      data: { ambassadorId: amb.id },
     });
     return NextResponse.json({ ok: true, ambassadorId: amb.id });
+  }
+
+  if (body.action === "outreach") {
+    const contact = await prisma.contact.findUnique({ where: { id } });
+    if (!contact) return NextResponse.json({ error: "Contato não encontrado" }, { status: 404 });
+
+    const noteAppend = body.notes ? String(body.notes).trim() : "";
+    const mergedNotes = noteAppend
+      ? [contact.notes, noteAppend].filter(Boolean).join("\n")
+      : contact.notes;
+
+    const updated = await prisma.contact.update({
+      where: { id },
+      data: {
+        lastContactedAt: new Date(),
+        contactAttempts: { increment: 1 },
+        nextFollowUpAt: body.nextFollowUpAt ? new Date(body.nextFollowUpAt) : undefined,
+        notes: mergedNotes,
+        status: body.status || contact.status,
+        statusChangedAt: body.status && body.status !== contact.status ? new Date() : undefined,
+      },
+    });
+    return NextResponse.json(updated);
   }
 
   const contact = await prisma.contact.update({
@@ -30,6 +57,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       tiktok: body.tiktok,
       notes: body.notes,
       contactedBy: body.contactedBy,
+      lastContactedAt: body.lastContactedAt ? new Date(body.lastContactedAt) : undefined,
+      nextFollowUpAt: body.nextFollowUpAt ? new Date(body.nextFollowUpAt) : body.nextFollowUpAt === null ? null : undefined,
+      contactAttempts: body.contactAttempts,
       statusChangedAt: body.status ? new Date() : undefined,
     },
   });

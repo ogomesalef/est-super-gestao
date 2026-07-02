@@ -1,7 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { firstName, monthNameFromRef, parseDate } from "@/lib/utils";
+import { displayFirstName, displayName, legalName } from "@/lib/ambassador-name";
 import { VERTICAL_CONFIG } from "@/lib/constants";
+import { financeTeamCcHeader, financeTeamToHeader, verticalFromDisplay } from "@/lib/finance-recipients";
 import {
   buildBioFormalizacaoBlock,
   buildComprovacaoBlock,
@@ -40,11 +42,13 @@ export const EMAIL_THEME = {
 const AMBASSADOR_ACTION_TEMPLATES: Record<string, string> = {
   "Enviar proposta (Assinatura + Cupom)": "email_proposta_assinatura",
   "Enviar proposta (Remuneração)": "email_proposta_remuneracao",
+  "Enviar lembrete de proposta": "email_lembrete_proposta",
   "Enviar próximos passos (Assinatura + Cupom)": "email_proximos_passos_assinatura",
   "Enviar formalização (Assinatura + Cupom)": "email_formalizacao_assinatura",
   "Enviar formalização (Remuneração)": "email_formalizacao_remuneracao",
   "Enviar reprovação": "email_reprovacao",
   "Enviar cancelamento de parceria": "email_parceria_cancelamento",
+  "Enviar pedido de vídeo (collab campanha)": "email_collab_pedido_video",
 };
 
 const FINANCE_ACTION_TEMPLATES: Record<string, string> = {
@@ -102,65 +106,9 @@ function formatDateBR(v: unknown): string {
   return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
-export function formatMoney(value: unknown): string {
-  if (typeof value === "number" && isFinite(value)) {
-    return (
-      "R$ " +
-      value
-        .toFixed(2)
-        .replace(".", ",")
-        .replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-    );
-  }
-  const s = String(value || "")
-    .replace(/[R$\s]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const n = parseFloat(s);
-  if (isNaN(n)) return String(value || "");
-  return (
-    "R$ " +
-    n
-      .toFixed(2)
-      .replace(".", ",")
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-  );
-}
+import { formatMesDisplay, formatMoney, formatPercent } from "@/lib/email-formatters";
 
-export function formatPercent(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "number") {
-    const pct = value <= 1 ? value * 100 : value;
-    return pct.toFixed(2).replace(".", ",") + "%";
-  }
-  const s = String(value).replace("%", "").replace(",", ".").trim();
-  const n = parseFloat(s);
-  if (isNaN(n)) return String(value);
-  const pct = n <= 1 ? n * 100 : n;
-  return pct.toFixed(2).replace(".", ",") + "%";
-}
-
-export function formatMesDisplay(ym: string): string {
-  if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return String(ym || "");
-  const nomes = [
-    "",
-    "Janeiro",
-    "Fevereiro",
-    "Março",
-    "Abril",
-    "Maio",
-    "Junho",
-    "Julho",
-    "Agosto",
-    "Setembro",
-    "Outubro",
-    "Novembro",
-    "Dezembro",
-  ];
-  const year = parseInt(ym.substring(0, 4), 10);
-  const month = parseInt(ym.substring(5, 7), 10);
-  return (nomes[month] || ym) + "/" + year;
-}
+export { formatMesDisplay, formatMoney, formatPercent } from "@/lib/email-formatters";
 
 function formatProgramaFullName(programa: string): string {
   return programa === "OAB" ? "Super Embaixador OAB" : "Super Embaixador Carreira Jurídica";
@@ -403,11 +351,27 @@ function applyAmbassadorPlaceholders(html: string, data: Record<string, unknown>
     "{{mesEncerramento}}": esc(data.mesEncerramento),
     "{{regulamentoLink}}": esc(data.regulamentoLink),
     "{{accentSecondary}}": esc(data.accentSecondary),
+    "{{campaignName}}": esc(data.campaignName),
+    "{{briefingUrl}}": esc(data.briefingUrl),
+    "{{dueDateDisplay}}": esc(data.dueDateDisplay),
+    "{{videoConcept}}": esc(data.videoConcept),
   };
 
   let out = String(html || "");
   for (const [k, v] of Object.entries(rawMap)) out = out.split(k).join(v);
   for (const [k, v] of Object.entries(map)) out = out.split(k).join(v);
+
+  const knownKeys = new Set([
+    ...Object.keys(map).map((k) => k.slice(2, -2)),
+    ...rawKeys,
+  ]);
+  for (const [key, value] of Object.entries(data)) {
+    if (knownKeys.has(key) || value == null || value === "") continue;
+    if (typeof value === "string" || typeof value === "number") {
+      out = out.split(`{{${key}}}`).join(esc(value));
+    }
+  }
+
   return out;
 }
 
@@ -450,6 +414,7 @@ function applyFinancePlaceholders(html: string, data: Record<string, unknown>): 
 
 export type AmbassadorLike = {
   fullName: string;
+  socialName?: string | null;
   email?: string | null;
   program: string;
   partnership?: {
@@ -499,8 +464,8 @@ export function buildAmbassadorTemplateData(
   };
 
   return {
-    firstName: firstName(ambassador.fullName),
-    fullName: ambassador.fullName,
+    firstName: displayFirstName(ambassador),
+    fullName: displayName(ambassador),
     email: ambassador.email || "",
     valor: p?.agreedValue != null ? formatMoney(p.agreedValue) : String(extra?.valor || ""),
     vertical,
@@ -600,10 +565,14 @@ export function resolveAmbassadorEmailAction(
 function buildAmbassadorSubject(
   action: string,
   firstName: string,
-  verticalDisplay: string
+  verticalDisplay: string,
+  extra?: Record<string, string | number | undefined>
 ): string {
   if (action === "Enviar proposta (Assinatura + Cupom)") {
     return `${firstName}, sua proposta do Programa Super Embaixador ${verticalDisplay}`;
+  }
+  if (action === "Enviar lembrete de proposta") {
+    return `${firstName}, lembrete da proposta Super Embaixador ${verticalDisplay}`;
   }
   if (action === "Enviar formalização (Assinatura + Cupom)") {
     return `${firstName}, formalização da sua parceria Super Embaixador ${verticalDisplay}`;
@@ -611,6 +580,12 @@ function buildAmbassadorSubject(
   if (action === "Enviar cancelamento de parceria") {
     const brand = verticalDisplay === "OAB" ? "Estratégia OAB" : "Estratégia Carreira Jurídica";
     return `${brand} — Atualização da sua parceria`;
+  }
+  if (action === "Enviar pedido de vídeo (collab campanha)") {
+    const campaign = String(extra?.campaignName || "").trim();
+    return campaign
+      ? `${firstName}, pedido de vídeo — ${campaign}`
+      : `${firstName}, pedido de vídeo — Super Embaixador ${verticalDisplay}`;
   }
   return `${firstName}, Super Embaixadores (${verticalDisplay})`;
 }
@@ -629,7 +604,8 @@ export function renderAmbassadorEmail(
   const subject = buildAmbassadorSubject(
     resolved,
     String(data.firstName),
-    String(data.verticalDisplay)
+    String(data.verticalDisplay),
+    extra
   );
   const html = applyAmbassadorPlaceholders(loadTemplate(fileName), data);
   return { subject, html, action: resolved };
@@ -665,7 +641,7 @@ export function renderFinanceEmail(
   action: string,
   fin: FinanceLike,
   control?: ControlLike
-): { subject: string; html: string; recipient?: string } {
+): { subject: string; html: string; recipient?: string; cc?: string; from?: string } {
   const fileName = FINANCE_ACTION_TEMPLATES[action];
   if (!fileName) throw new Error(`Ação financeira sem template: ${action}`);
 
@@ -674,13 +650,14 @@ export function renderFinanceEmail(
   const headerBg = program === "OAB" ? EMAIL_THEME.OAB_BG : EMAIL_THEME.ECJ_BG;
   const fromAddr =
     program === "OAB" ? "embaixadores.oab@estrategia.com" : "embaixadores.ecj@estrategia.com";
-  const fn = firstName(amb.fullName);
+  const fn = displayFirstName(amb);
+  const legal = legalName(amb);
   const mesDisplay = formatMesDisplay(fin.monthRef);
   const perc = formatPercent(control?.pctDelivered ?? fin.pctDelivered);
 
   const base = {
     firstName: fn,
-    fullName: amb.fullName,
+    fullName: displayName(amb),
     mes: fin.monthRef,
     mesDisplay,
     programa: program,
@@ -705,17 +682,19 @@ export function renderFinanceEmail(
     dataEnvioFinanceiro: new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
     replyToEmail: fromAddr,
     programaFullName: formatProgramaFullName(program),
-    emailFinanceiro: process.env.FINANCE_TEAM_EMAIL || "alefgomesandre+financeiro@gmail.com",
-    nomeFinanceiro: amb.fullName,
+    emailFinanceiro: financeTeamToHeader(),
+    nomeFinanceiro: legal,
   };
 
   const html = applyFinancePlaceholders(loadTemplate(fileName), base);
 
   if (action === "Enviar solicitação ao Financeiro") {
     return {
-      subject: `Solicitação de pagamento | ${mesDisplay} | ${base.programaFullName} | ${amb.fullName}`,
+      subject: `Solicitação de pagamento | ${mesDisplay} | ${base.programaFullName} | ${legal}`,
       html,
-      recipient: process.env.FINANCE_TEAM_EMAIL || "alefgomesandre+financeiro@gmail.com",
+      recipient: financeTeamToHeader(),
+      cc: financeTeamCcHeader(),
+      from: verticalFromDisplay(program),
     };
   }
 

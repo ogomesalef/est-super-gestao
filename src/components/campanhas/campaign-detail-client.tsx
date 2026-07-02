@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui";
+import { CampaignCollabEditor } from "@/components/campanhas/campaign-collab-editor";
 import { CampaignDetailView } from "@/components/campanhas/campaign-detail-view";
 import type { CampaignDetailPayload } from "@/lib/campaign-detail";
 
@@ -114,6 +115,14 @@ export function CampaignDetailClient({ campaignId }: { campaignId: string }) {
           Envie este link para a chefe — ela vê entregas, links, pasta Drive e período da campanha.
         </p>
       </div>
+
+      <CampaignCollabEditor
+        campaignId={campaignId}
+        campaignName={data.campaign.name}
+        campaignProgram={data.campaign.program}
+        collab={data.collab}
+        onSaved={setData}
+      />
 
       <CampaignDetailView data={data} showAmbassadorLinks />
     </div>

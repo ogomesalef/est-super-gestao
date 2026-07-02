@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Loader2, Mail } from "lucide-react";
 import { Button, Select } from "@/components/ui";
-import { EmailPreviewModal } from "@/components/email-preview-modal";
+import { SendEmailModal, type SendEmailConfirmPayload } from "@/components/send-email-modal";
 import { SavedEmailInput, rememberTestEmail } from "@/components/saved-email-input";
 import { useVertical } from "@/components/vertical-context";
-import { EMAIL_ACTIONS, MODALITIES } from "@/lib/constants";
+import { EMAIL_ACTIONS, MODALITIES, filterAmbassadorEmailActions } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { loadSavedTestEmails } from "@/lib/saved-test-emails";
 
@@ -14,12 +14,7 @@ const TEMPLATE_KEY = "super-gestao:test-email-template";
 const MODALITY_KEY = "super-gestao:test-email-modality";
 
 function filterActions(modality: string) {
-  if (modality === "Remuneração") {
-    return EMAIL_ACTIONS.filter((a) => a.includes("Remuneração") || a === "Enviar reprovação");
-  }
-  return EMAIL_ACTIONS.filter(
-    (a) => a.includes("Assinatura + Cupom") || a === "Enviar reprovação"
-  );
+  return filterAmbassadorEmailActions(modality);
 }
 
 export function EmailTestCard() {
@@ -31,6 +26,13 @@ export function EmailTestCard() {
   const [previewing, setPreviewing] = useState(false);
   const [savedKey, setSavedKey] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+  const [modalMeta, setModalMeta] = useState<{
+    to: string;
+    fromId?: string;
+    program: string;
+    whatsappMessage: string;
+  } | null>(null);
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [feedback, setFeedback] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -72,17 +74,37 @@ export function EmailTestCard() {
     if (!res.ok || (!previewOnly && !data.ok)) {
       throw new Error(data.error || "Falha na requisição");
     }
-    return data as { subject: string; html: string; action?: string; ok?: boolean };
+    return data as {
+      subject: string;
+      html: string;
+      action?: string;
+      ok?: boolean;
+      to?: string;
+      fromId?: string;
+      program?: string;
+      whatsappMessage?: string;
+    };
+  }
+
+  async function prepareEmail(previewOnly: boolean) {
+    const data = await requestEmail(true);
+    if (!data) return null;
+    setSubject(data.subject);
+    setHtml(data.html);
+    setModalMeta({
+      to: data.to || email.trim(),
+      fromId: data.fromId,
+      program: data.program || vertical,
+      whatsappMessage: data.whatsappMessage || "",
+    });
+    return data;
   }
 
   async function preview() {
     setPreviewing(true);
     setFeedback(null);
     try {
-      const data = await requestEmail(true);
-      if (!data) return;
-      setSubject(data.subject);
-      setHtml(data.html);
+      await prepareEmail(true);
       setPreviewOpen(true);
     } catch (e) {
       setFeedback({ type: "err", text: e instanceof Error ? e.message : "Erro ao gerar preview." });
@@ -91,23 +113,48 @@ export function EmailTestCard() {
     }
   }
 
-  async function sendTest() {
+  async function openSendModal() {
     const to = email.trim();
     if (!to) return;
-
     setSending(true);
     setFeedback(null);
-
     try {
-      const data = await requestEmail(false);
-      if (!data) return;
+      await prepareEmail(true);
+      setSendModalOpen(true);
+    } catch (e) {
+      setFeedback({ type: "err", text: e instanceof Error ? e.message : "Erro ao preparar envio." });
+    } finally {
+      setSending(false);
+    }
+  }
 
-      rememberTestEmail(to);
+  async function confirmSend(payload: SendEmailConfirmPayload) {
+    setSending(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/emails/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: payload.to,
+          from: payload.from,
+          subject: payload.subject,
+          html: payload.html,
+          program: vertical,
+          modality,
+          action,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Falha no envio");
+
+      rememberTestEmail(payload.to);
       persistPrefs(action, modality);
       setSavedKey((k) => k + 1);
+      setSendModalOpen(false);
       setFeedback({
         type: "ok",
-        text: `Enviado para ${to} — ${data.action || action}`,
+        text: `Enviado para ${payload.to} — ${data.action || action}`,
       });
     } catch (e) {
       setFeedback({
@@ -194,7 +241,7 @@ export function EmailTestCard() {
           </Button>
           <Button
             type="button"
-            onClick={sendTest}
+            onClick={openSendModal}
             disabled={sending || previewing || !email.trim()}
           >
             {sending ? (
@@ -225,11 +272,25 @@ export function EmailTestCard() {
         )}
       </div>
 
-      <EmailPreviewModal
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
+      <SendEmailModal
+        open={previewOpen || sendModalOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setSendModalOpen(false);
+        }}
+        sending={sending}
+        title={sendModalOpen ? "Confirmar envio" : "Preview do e-mail"}
+        actionLabel={action}
+        program={modalMeta?.program}
+        fromId={modalMeta?.fromId}
+        to={modalMeta?.to || email}
         subject={subject}
         html={html}
+        whatsappMessage={modalMeta?.whatsappMessage || ""}
+        showSendButton={sendModalOpen}
+        onSend={(payload) => {
+          void confirmSend(payload);
+        }}
       />
     </>
   );

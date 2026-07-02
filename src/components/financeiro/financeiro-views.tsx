@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { TableHead, TableRow, Td, TableShell, Th } from "@/components/ui";
-import { PAYMENT_STATUSES } from "@/lib/constants";
+import { FINANCE_PIPELINE_BLOCKED, PAYMENT_STATUSES, FINANCE_PIPELINE_STAGES } from "@/lib/constants";
+import { groupFinancePipelineItems } from "@/lib/finance-pipeline";
 import { VerticalBadge } from "@/components/vertical-badge";
 import { NotionPill, groupHeaderColor } from "@/components/views/notion-pill";
+import { DragBoard } from "@/components/views/drag-board";
+import { resolveGroupOrder } from "@/lib/view-system/group-order";
 import { groupItems } from "@/lib/view-system/group";
 import type { GroupByKey } from "@/lib/view-system/types";
 import { verticalRowClass } from "@/lib/vertical-styles";
@@ -18,6 +21,7 @@ import {
 import { FinanceiroCardActions } from "./financeiro-card-actions";
 import { FinanceiroItemCard } from "./financeiro-item-card";
 import type { FinanceiroRow } from "./types";
+import { displayName } from "@/lib/ambassador-name";
 
 type CardActionProps = {
   loading: string | null;
@@ -26,6 +30,7 @@ type CardActionProps = {
   onGenerateTermo: (id: string, force?: boolean) => void;
   onEditTermoData: (row: FinanceiroRow) => void;
   onEditValue: (row: FinanceiroRow) => void;
+  onUploadSignedTermo?: (id: string, file: File) => void;
   onNotesChanged?: () => void;
 };
 
@@ -71,6 +76,72 @@ function GroupHeader({
   );
 }
 
+function PipelineColumn({
+  label,
+  count,
+  items,
+  dropStatus,
+  onDrop,
+  dragId,
+  setDragId,
+  cardProps,
+  highlightFinanceRequest,
+  pillStatus,
+  className,
+}: {
+  label: string;
+  count: number;
+  items: FinanceiroRow[];
+  dropStatus?: string;
+  onDrop?: (id: string, status: string) => void;
+  dragId: string | null;
+  setDragId: (id: string | null) => void;
+  cardProps: CardActionProps;
+  highlightFinanceRequest?: boolean;
+  pillStatus?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn("shrink-0 rounded-xl bg-surface/60 p-2", className)}
+      onDragOver={(e) => {
+        if (dropStatus) e.preventDefault();
+      }}
+      onDrop={(e) => {
+        if (!dropStatus || !onDrop) return;
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text/plain") || dragId;
+        if (id) onDrop(id, dropStatus);
+        setDragId(null);
+      }}
+    >
+      <div className="mb-3 flex flex-wrap items-center gap-1.5 px-1">
+        <NotionPill kind="payment" styleAs={pillStatus}>
+          {label}
+        </NotionPill>
+        <span className="text-xs text-muted-foreground">{count}</span>
+      </div>
+      <div className="min-h-[120px] space-y-3">
+        {items.map((f) => (
+          <FinanceiroItemCard
+            key={f.id}
+            row={f}
+            {...cardProps}
+            draggable={Boolean(dropStatus)}
+            dragActive={dragId === f.id}
+            highlightFinanceRequest={highlightFinanceRequest}
+            onDragStart={(e) => {
+              e.dataTransfer.setData("text/plain", f.id);
+              setDragId(f.id);
+            }}
+            onDragEnd={() => setDragId(null)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function FinanceiroTableView({
   items,
   groupBy,
@@ -80,6 +151,7 @@ export function FinanceiroTableView({
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onUploadSignedTermo,
   onNotesChanged,
 }: {
   items: FinanceiroRow[];
@@ -124,7 +196,7 @@ export function FinanceiroTableView({
                       <Td>
                         <QuickNoteContextTarget
                           ambassadorId={f.ambassador.id}
-                          ambassadorName={f.ambassador.fullName}
+                          ambassadorName={displayName(f.ambassador)}
                           onChanged={onNotesChanged}
                         >
                           <div className="flex items-center gap-2">
@@ -134,7 +206,7 @@ export function FinanceiroTableView({
                                 onNotesChanged={onNotesChanged}
                                 contextMenu={false}
                               >
-                                {f.ambassador.fullName}
+                                {displayName(f.ambassador)}
                               </AmbassadorNameLink>
                               <div className="text-xs text-muted-foreground">{f.ambassador.instagram}</div>
                               <QuickNoteCardBadges notes={f.ambassador.quickNotes} />
@@ -158,6 +230,7 @@ export function FinanceiroTableView({
                           onGenerateTermo={onGenerateTermo}
                           onEditTermoData={onEditTermoData}
                           onEditValue={onEditValue}
+                          onUploadSignedTermo={onUploadSignedTermo}
                         />
                       </Td>
                     </TableRow>
@@ -180,6 +253,7 @@ export function FinanceiroGalleryView({
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onUploadSignedTermo,
   onNotesChanged,
   loading,
 }: {
@@ -214,6 +288,7 @@ export function FinanceiroGalleryView({
                 onGenerateTermo={onGenerateTermo}
                 onEditTermoData={onEditTermoData}
                 onEditValue={onEditValue}
+                onUploadSignedTermo={onUploadSignedTermo}
                 onNotesChanged={onNotesChanged}
               />
             ))}
@@ -227,76 +302,108 @@ export function FinanceiroGalleryView({
 export function FinanceiroBoardView({
   items,
   groupBy,
+  columnOrder,
+  hiddenColumnKeys,
+  onColumnOrderChange,
   onMove,
   onAction,
   onEmailAction,
   onGenerateTermo,
   onEditTermoData,
   onEditValue,
+  onUploadSignedTermo,
   onNotesChanged,
   loading,
 }: {
   items: FinanceiroRow[];
   groupBy: GroupByKey;
+  columnOrder?: string[];
+  hiddenColumnKeys?: string[];
+  onColumnOrderChange?: (order: string[]) => void;
   onMove: (id: string, newStatus: string) => void;
 } & CardActionProps) {
-  const effectiveGroupBy = groupBy === "none" ? "status" : groupBy;
-  const groups = groupItems(
-    items,
-    (i) => getGroupKey(i, effectiveGroupBy),
-    orderedKeys(effectiveGroupBy)
+  const cardProps: CardActionProps = {
+    loading,
+    onAction,
+    onEmailAction,
+    onGenerateTermo,
+    onEditTermoData,
+    onEditValue,
+    onUploadSignedTermo,
+    onNotesChanged,
+  };
+
+  const renderFinanceCard = (f: FinanceiroRow) => (
+    <FinanceiroItemCard
+      row={f}
+      {...cardProps}
+      highlightFinanceRequest={
+        f.paymentStatus === "Pronto para enviar ao Financeiro" ||
+        f.paymentStatus === "Solicitado ao Financeiro"
+      }
+    />
   );
-  const [dragId, setDragId] = useState<string | null>(null);
+
+  if (groupBy !== "status" && groupBy !== "none") {
+    const defaultKeys = orderedKeys(groupBy);
+    const order = defaultKeys ? resolveGroupOrder(defaultKeys, columnOrder) : undefined;
+    const groups = groupItems(items, (i) => getGroupKey(i, groupBy), order);
+    return (
+      <DragBoard
+        groups={groups.map((g) => ({ key: g.key, items: g.items }))}
+        groupBy={groupBy}
+        defaultColumnOrder={defaultKeys}
+        columnOrder={columnOrder}
+        hiddenColumnKeys={hiddenColumnKeys}
+        onColumnOrderChange={onColumnOrderChange}
+        onItemDrop={onMove}
+        getItemId={(f) => f.id}
+        columnWidth="w-80"
+        renderCard={renderFinanceCard}
+      />
+    );
+  }
+
+  const { stages, blocked } = groupFinancePipelineItems(items);
+  const dropByKey = new Map<string, string>();
+  const boardGroups = stages.map((stage) => {
+    dropByKey.set(stage.key, stage.dropStatus);
+    return {
+      key: stage.key,
+      label: stage.label,
+      styleAs: stage.pillStatus,
+      items: stage.items,
+    };
+  });
+  if (blocked.length > 0) {
+    boardGroups.push({
+      key: "blocked",
+      label: FINANCE_PIPELINE_BLOCKED,
+      styleAs: FINANCE_PIPELINE_BLOCKED,
+      items: blocked,
+    });
+  }
+
+  const defaultKeys = [
+    ...FINANCE_PIPELINE_STAGES.map((s) => s.key),
+    ...(blocked.length > 0 ? ["blocked"] : []),
+  ];
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {groups.map((group) => (
-        <div
-          key={group.key}
-          className="w-80 shrink-0 rounded-xl bg-surface/60 p-2"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData("text/plain") || dragId;
-            if (id && effectiveGroupBy === "status") onMove(id, group.key);
-            setDragId(null);
-          }}
-        >
-          <div className="mb-2 flex items-center gap-2 px-1">
-            <span
-              className={cn(
-                "rounded px-2 py-0.5 text-xs font-semibold",
-                groupHeaderColor(group.key, "status")
-              )}
-            >
-              {group.key}
-            </span>
-            <span className="text-xs text-muted-foreground">{group.items.length}</span>
-          </div>
-          <div className="min-h-[120px] space-y-3">
-            {group.items.map((f) => (
-              <FinanceiroItemCard
-                key={f.id}
-                row={f}
-                loading={loading}
-                onAction={onAction}
-                onEmailAction={onEmailAction}
-                onGenerateTermo={onGenerateTermo}
-                onEditTermoData={onEditTermoData}
-                onEditValue={onEditValue}
-                onNotesChanged={onNotesChanged}
-                draggable={effectiveGroupBy === "status"}
-                dragActive={dragId === f.id}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/plain", f.id);
-                  setDragId(f.id);
-                }}
-                onDragEnd={() => setDragId(null)}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    <DragBoard
+      groups={boardGroups}
+      groupBy="status"
+      defaultColumnOrder={defaultKeys}
+      columnOrder={columnOrder}
+      hiddenColumnKeys={hiddenColumnKeys}
+      onColumnOrderChange={onColumnOrderChange}
+      onItemDrop={(id, key) => {
+        const status = dropByKey.get(key);
+        if (status) onMove(id, status);
+      }}
+      getItemId={(f) => f.id}
+      columnClassName="min-w-[16rem] flex-1"
+      renderCard={renderFinanceCard}
+    />
   );
 }

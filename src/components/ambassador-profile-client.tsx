@@ -4,21 +4,31 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Loader2, Mail } from "lucide-react";
 import { Button, Card, Input, Select, TableHead, TableRow, Td, TableShell, Th } from "@/components/ui";
-import { EmailPreviewModal } from "@/components/email-preview-modal";
+import { SendEmailModal, type SendEmailConfirmPayload } from "@/components/send-email-modal";
 import { AmbassadorMonthDeliveriesModal } from "@/components/ambassador-month-deliveries-modal";
-import { FinanceEmailModal } from "@/components/financeiro/finance-email-modal";
+import { FinanceEmailModal, type FinanceEmailModalPayload } from "@/components/financeiro/finance-email-modal";
 import { ParceriaCancelamentoModal } from "@/components/parceria-cancelamento-modal";
 import { VerticalBadge } from "@/components/vertical-badge";
 import { NotionPill } from "@/components/views/notion-pill";
 import { QuickNotesFloatingPanel, QuickNoteContextTarget } from "@/components/ambassador/ambassador-quick-notes";
 import type { AmbassadorProfile } from "@/components/ambassador/types";
+import { displayName, legalName } from "@/lib/ambassador-name";
 import {
   CANCELAMENTO_EMAIL_ACTION,
   COLLAB_PEDIDO_EMAIL_ACTION,
   EMAIL_ACTIONS,
   FINANCE_ACTIONS,
+  PROPOSTA_LEMBRETE_ACTION,
   filterAmbassadorEmailActions,
+  resolvePropostaAction,
 } from "@/lib/constants";
+import { isProposalStale, needsAnalysis } from "@/lib/partnership-alerts";
+import {
+  ParceriaPropostaModal,
+  type PropostaEmailVars,
+} from "@/components/parceria-proposta-modal";
+import type { ParceriaItem } from "@/components/parcerias/types";
+import { ApplicationFormSummary } from "@/components/parcerias/application-form-summary";
 import { currentMonthRef, formatMonthRefLong } from "@/lib/utils";
 
 function formatDate(iso: string | null | undefined): string {
@@ -38,6 +48,48 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
       <dd className="text-sm text-ink">{value}</dd>
     </div>
   );
+}
+
+function profileToParceriaItem(profile: AmbassadorProfile): ParceriaItem {
+  const p = profile.partnership;
+  return {
+    id: profile.id,
+    program: profile.program,
+    fullName: profile.fullName,
+    socialName: profile.socialName,
+    email: profile.email,
+    whatsapp: profile.whatsapp,
+    instagram: profile.instagram,
+    status: profile.status,
+    source: profile.source,
+    applicationReceivedAt: profile.applicationReceivedAt,
+    applicationFormData: profile.applicationFormData,
+    respostasSheetName: profile.respostasSheetName,
+    respostasSheetRow: profile.respostasSheetRow,
+    needsReview: profile.needsReview,
+    alerts: profile.alerts,
+    partnership: p
+      ? {
+          modality: p.modality,
+          agreedValue: p.agreedValue,
+          valueLocked: p.valueLocked,
+          courseName: p.courseName,
+          courseReleased: p.courseReleased,
+          couponCode: p.couponCode,
+          metaFeed: p.metaFeed,
+          metaStories: p.metaStories,
+          metaTiktok: p.metaTiktok,
+          metaYoutube: p.metaYoutube,
+          startDate: p.startDate,
+          proposalSentAt: p.proposalSentAt,
+          proposalReminderSentAt: p.proposalReminderSentAt,
+          legalCpf: p.legalCpf,
+          legalAddress: p.legalAddress,
+          bankDetails: p.bankDetails,
+        }
+      : null,
+    contact: profile.contact ? { id: profile.contact.id } : null,
+  };
 }
 
 const FINANCE_EMAIL_ACTIONS = new Set([
@@ -63,22 +115,35 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
   const [dueDateDisplay, setDueDateDisplay] = useState("");
   const [videoConcept, setVideoConcept] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
   const [previewSubject, setPreviewSubject] = useState("");
   const [previewHtml, setPreviewHtml] = useState("");
+  const [emailModalMeta, setEmailModalMeta] = useState<{
+    to: string;
+    fromId?: string;
+    program: string;
+    whatsappMessage: string;
+  } | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const [financeEmailModal, setFinanceEmailModal] = useState<{
-    financeId: string;
-    action: string;
-    subject: string;
-    html: string;
-    recipient: string;
-    termLink?: string | null;
-  } | null>(null);
+  const [financeEmailModal, setFinanceEmailModal] = useState<FinanceEmailModalPayload | null>(null);
   const [financeLoading, setFinanceLoading] = useState<string | null>(null);
   const [monthDeliveriesModal, setMonthDeliveriesModal] = useState<string | null>(null);
+  const [socialNameDraft, setSocialNameDraft] = useState("");
+  const [savingSocialName, setSavingSocialName] = useState(false);
+  const [propostaOpen, setPropostaOpen] = useState(false);
+  const [propostaSaving, setPropostaSaving] = useState(false);
+  const [lembreteModal, setLembreteModal] = useState<{
+    subject: string;
+    html: string;
+    to: string;
+    fromId?: string;
+    program: string;
+    whatsappMessage: string;
+  } | null>(null);
+  const [lembreteSaving, setLembreteSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,6 +157,7 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
       }
       const data: AmbassadorProfile = await res.json();
       setProfile(data);
+      setSocialNameDraft(data.socialName || "");
       if (data.partnership?.courseName) setCourseName(data.partnership.courseName);
       if (data.partnership?.couponCode) setCouponCode(data.partnership.couponCode);
     } catch {
@@ -133,8 +199,8 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
     };
   }
 
-  async function previewEmail() {
-    if (!profile) return;
+  async function prepareEmail() {
+    if (!profile) return null;
     const res = await fetch("/api/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -146,12 +212,31 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
       }),
     });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Erro ao gerar e-mail");
     setPreviewSubject(data.subject);
     setPreviewHtml(data.html);
-    setPreviewOpen(true);
+    setEmailModalMeta({
+      to: data.to || profile.email || "",
+      fromId: data.fromId,
+      program: data.program || profile.program,
+      whatsappMessage: data.whatsappMessage || "",
+    });
+    return data;
   }
 
-  async function sendEmail(finalize?: { newStatus: string; cancellationMonthRef: string }) {
+  async function previewEmail() {
+    try {
+      await prepareEmail();
+      setPreviewOpen(true);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Erro ao gerar preview");
+    }
+  }
+
+  async function sendEmail(
+    finalize?: { newStatus: string; cancellationMonthRef: string },
+    overrides?: SendEmailConfirmPayload
+  ) {
     if (!profile) return;
     setEmailSending(true);
     const vars = {
@@ -166,6 +251,12 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
         action: emailAction,
         vars,
         finalize,
+        to: overrides?.to,
+        from: overrides?.from,
+        cc: overrides?.cc,
+        subject: overrides?.subject,
+        html: overrides?.html,
+        whatsappMessage: overrides?.whatsappMessage,
       }),
     });
     const data = await res.json();
@@ -193,7 +284,128 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
       setCancelModalOpen(true);
       return;
     }
-    await sendEmail();
+    try {
+      await prepareEmail();
+      setSendModalOpen(true);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Erro ao preparar envio");
+    }
+  }
+
+  async function confirmSend(payload: SendEmailConfirmPayload) {
+    await sendEmail(undefined, payload);
+    setSendModalOpen(false);
+  }
+
+  async function markPropostaOnly(vars: PropostaEmailVars) {
+    if (!profile) return;
+    setPropostaSaving(true);
+    await fetch(`/api/parcerias/${profile.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "Proposta",
+        needsReview: false,
+        modality: vars.modality,
+        agreedValue: vars.agreedValue,
+        metaFeed: vars.metaFeed,
+        metaStories: vars.metaStories,
+        metaTiktok: vars.metaTiktok,
+        metaYoutube: vars.metaYoutube,
+      }),
+    });
+    setPropostaSaving(false);
+    setPropostaOpen(false);
+    load();
+  }
+
+  async function sendPropostaAndUpdate(vars: PropostaEmailVars, email: SendEmailConfirmPayload) {
+    if (!profile) return;
+    setPropostaSaving(true);
+    const action = resolvePropostaAction(vars.modality);
+    const res = await fetch("/api/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ambassadorId: profile.id,
+        action,
+        vars: {
+          metaFeed: vars.metaFeed,
+          metaStories: vars.metaStories,
+          metaTiktok: vars.metaTiktok,
+          metaYoutube: vars.metaYoutube,
+          productValue: vars.productValue,
+        },
+        finalize: { sendProposal: true, proposal: vars },
+        to: email.to,
+        from: email.from,
+        cc: email.cc,
+        subject: email.subject,
+        html: email.html,
+        whatsappMessage: email.whatsappMessage,
+      }),
+    });
+    const data = await res.json();
+    setPropostaSaving(false);
+    if (data.send?.ok) {
+      setPropostaOpen(false);
+      load();
+    } else {
+      alert(data.send?.error || data.error || "Erro ao enviar proposta");
+    }
+  }
+
+  async function prepareLembreteProposta() {
+    if (!profile) return;
+    const res = await fetch("/api/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        previewOnly: true,
+        ambassadorId: profile.id,
+        action: PROPOSTA_LEMBRETE_ACTION,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "Erro ao preparar lembrete");
+      return;
+    }
+    setLembreteModal({
+      subject: data.subject,
+      html: data.html,
+      to: data.to || profile.email || "",
+      fromId: data.fromId,
+      program: data.program || profile.program,
+      whatsappMessage: data.whatsappMessage || "",
+    });
+  }
+
+  async function sendLembreteProposta(email: SendEmailConfirmPayload) {
+    if (!profile) return;
+    setLembreteSaving(true);
+    const res = await fetch("/api/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ambassadorId: profile.id,
+        action: PROPOSTA_LEMBRETE_ACTION,
+        to: email.to,
+        from: email.from,
+        cc: email.cc,
+        subject: email.subject,
+        html: email.html,
+        whatsappMessage: email.whatsappMessage,
+      }),
+    });
+    const data = await res.json();
+    setLembreteSaving(false);
+    if (data.send?.ok) {
+      setLembreteModal(null);
+      load();
+    } else {
+      alert(data.send?.error || data.error || "Erro ao enviar lembrete");
+    }
   }
 
   async function requestFinanceEmail(financeId: string, action: string) {
@@ -215,7 +427,15 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
       subject: data.subject,
       html: data.html,
       recipient: data.recipient,
+      recipientDisplay: data.recipientDisplay,
+      cc: data.cc,
+      ccDisplay: data.ccDisplay,
+      from: data.from,
+      program: data.program,
       termLink: data.termLink ?? null,
+      ambassadorEmail: data.ambassadorEmail,
+      whatsappMessage: data.whatsappMessage,
+      financeOnly: data.financeOnly,
     });
   }
 
@@ -230,7 +450,7 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
     load();
   }
 
-  async function confirmFinanceEmail(payload: { subject: string; html: string }) {
+  async function confirmFinanceEmail(payload: SendEmailConfirmPayload) {
     if (!financeEmailModal) return;
     setFinanceLoading(financeEmailModal.financeId + "send");
     await fetch("/api/financeiro/actions", {
@@ -241,11 +461,36 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
         action: financeEmailModal.action,
         subject: payload.subject,
         html: payload.html,
+        to: payload.to,
+        from: payload.from,
+        cc: payload.cc,
       }),
     });
     setFinanceEmailModal(null);
     setFinanceLoading(null);
     load();
+  }
+
+  async function saveSocialName() {
+    if (!profile) return;
+    setSavingSocialName(true);
+    try {
+      const res = await fetch(`/api/ambassadors/${profile.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ socialName: socialNameDraft }),
+      });
+      if (!res.ok) {
+        alert("Erro ao salvar nome social.");
+        return;
+      }
+      await load();
+      setSuccessMessage("Nome social atualizado.");
+    } catch {
+      alert("Erro ao salvar nome social.");
+    } finally {
+      setSavingSocialName(false);
+    }
   }
 
   if (loading) {
@@ -270,6 +515,9 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
 
   const p = profile.partnership;
   const borderColor = profile.program === "ECJ" ? "#D08C00" : "#6B0A09";
+  const shownName = displayName(profile);
+  const civilName = legalName(profile);
+  const hasSocialName = Boolean(profile.socialName?.trim());
 
   return (
     <div className="space-y-6">
@@ -298,7 +546,7 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
 
       <QuickNoteContextTarget
         ambassadorId={profile.id}
-        ambassadorName={profile.fullName}
+        ambassadorName={shownName}
         onChanged={load}
       >
         <div
@@ -308,7 +556,10 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
           <div className="p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className="font-serif text-2xl text-ink">{profile.fullName}</h1>
+                <h1 className="font-serif text-2xl text-ink">{shownName}</h1>
+                {hasSocialName && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">Nome civil: {civilName}</p>
+                )}
                 <p className="mt-0.5 text-sm text-muted-foreground">{profile.instagram}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <VerticalBadge vertical={profile.program} />
@@ -335,7 +586,94 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
         </div>
       </QuickNoteContextTarget>
 
+      <Card title="Identificação">
+        <dl className="space-y-2.5">
+          <DetailRow label="Nome civil" value={civilName} />
+          <DetailRow
+            label="Nome social"
+            value={
+              <span className="text-muted-foreground">
+                {hasSocialName ? profile.socialName : "—"}
+              </span>
+            }
+          />
+        </dl>
+        <div className="mt-4 space-y-2 border-t border-hairline pt-4">
+          <label className="block text-xs font-medium text-muted-foreground">
+            Nome social (opcional)
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Usado em e-mails, WhatsApp e telas do sistema. Termos e solicitações ao financeiro usam o
+            nome civil.
+          </p>
+          <Input
+            placeholder="Como a pessoa prefere ser chamada"
+            value={socialNameDraft}
+            onChange={(e) => setSocialNameDraft(e.target.value)}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={savingSocialName || socialNameDraft === (profile.socialName || "")}
+            onClick={saveSocialName}
+          >
+            {savingSocialName ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar nome social"}
+          </Button>
+        </div>
+      </Card>
+
+      {profile.applicationFormData && Object.keys(profile.applicationFormData).length > 0 && (
+        <ApplicationFormSummary
+          program={profile.program}
+          applicationFormData={profile.applicationFormData}
+          applicationReceivedAt={profile.applicationReceivedAt}
+          respostasSheetName={profile.respostasSheetName}
+          respostasSheetRow={profile.respostasSheetRow}
+          variant="analysis"
+        />
+      )}
+
       <div className="grid gap-4 lg:grid-cols-2">
+        <Card title="Origem e pipeline">
+          <dl className="space-y-2.5">
+            <DetailRow
+              label="Origem"
+              value={
+                profile.source === "formulario"
+                  ? "Formulário"
+                  : profile.source === "prospeccao"
+                    ? "Prospecção"
+                    : profile.source === "import"
+                      ? "Import planilha"
+                      : profile.source || "—"
+              }
+            />
+            <DetailRow label="Candidatura recebida" value={formatDate(profile.applicationReceivedAt)} />
+            {profile.contact && (
+              <DetailRow
+                label="Contato de prospecção"
+                value={
+                  <Link href="/contatos" className="text-primary hover:underline">
+                    Ver contato ({profile.contact.status})
+                  </Link>
+                }
+              />
+            )}
+          </dl>
+          <div className="mt-4 flex flex-wrap gap-2 border-t border-hairline pt-4">
+            {profile.status === "Pendente" && (
+              <Button variant="secondary" size="sm" onClick={() => setPropostaOpen(true)}>
+                {needsAnalysis(profile) ? "Analisar e enviar proposta" : "Enviar proposta"}
+              </Button>
+            )}
+            {profile.status === "Proposta" && isProposalStale(profile) && (
+              <Button variant="secondary" size="sm" onClick={prepareLembreteProposta}>
+                Lembrete de proposta
+              </Button>
+            )}
+          </div>
+        </Card>
+
         <Card title="Parceria">
           <dl className="space-y-2.5">
             <DetailRow label="Modalidade" value={p?.modality || "—"} />
@@ -349,6 +687,7 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
             <DetailRow label="Início" value={formatDate(p?.startDate)} />
             <DetailRow label="Encerramento" value={formatDate(p?.endDate)} />
             <DetailRow label="Proposta enviada" value={formatDate(p?.proposalSentAt)} />
+            <DetailRow label="Último lembrete" value={formatDate(p?.proposalReminderSentAt)} />
             <DetailRow label="Formalização enviada" value={formatDate(p?.formalizationSentAt)} />
           </dl>
         </Card>
@@ -689,16 +1028,30 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
         onUpdated={load}
       />
 
-      <EmailPreviewModal
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
+      <SendEmailModal
+        open={previewOpen || sendModalOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setSendModalOpen(false);
+        }}
+        sending={emailSending}
+        title={sendModalOpen ? "Confirmar envio" : "Preview do e-mail"}
+        actionLabel={emailAction}
+        program={emailModalMeta?.program}
+        fromId={emailModalMeta?.fromId}
+        to={emailModalMeta?.to || ""}
         subject={previewSubject}
         html={previewHtml}
+        whatsappMessage={emailModalMeta?.whatsappMessage || ""}
+        showSendButton={sendModalOpen}
+        onSend={(payload) => {
+          void confirmSend(payload);
+        }}
       />
 
       <ParceriaCancelamentoModal
         open={cancelModalOpen}
-        ambassadorName={profile.fullName}
+        ambassadorName={shownName}
         initialMonthRef={cancellationMonthRef}
         saving={emailSending}
         onClose={() => setCancelModalOpen(false)}
@@ -711,19 +1064,45 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
 
       <FinanceEmailModal
         open={!!financeEmailModal}
-        action={financeEmailModal?.action || ""}
-        subject={financeEmailModal?.subject || ""}
-        html={financeEmailModal?.html || ""}
-        recipient={financeEmailModal?.recipient || ""}
-        termLink={financeEmailModal?.termLink}
+        {...(financeEmailModal || {
+          action: "",
+          subject: "",
+          html: "",
+          recipient: "",
+        })}
         sending={!!financeLoading?.endsWith("send")}
         onClose={() => setFinanceEmailModal(null)}
         onSend={confirmFinanceEmail}
       />
 
+      {profile && (
+        <ParceriaPropostaModal
+          open={propostaOpen}
+          item={profileToParceriaItem(profile)}
+          saving={propostaSaving}
+          onClose={() => setPropostaOpen(false)}
+          onMarkPropostaOnly={markPropostaOnly}
+          onSendProposal={sendPropostaAndUpdate}
+        />
+      )}
+
+      <SendEmailModal
+        open={!!lembreteModal}
+        onClose={() => setLembreteModal(null)}
+        sending={lembreteSaving}
+        actionLabel={PROPOSTA_LEMBRETE_ACTION}
+        program={lembreteModal?.program}
+        fromId={lembreteModal?.fromId}
+        to={lembreteModal?.to || ""}
+        subject={lembreteModal?.subject || ""}
+        html={lembreteModal?.html || ""}
+        whatsappMessage={lembreteModal?.whatsappMessage || ""}
+        onSend={sendLembreteProposta}
+      />
+
       <QuickNotesFloatingPanel
         ambassadorId={profile.id}
-        ambassadorName={profile.fullName}
+        ambassadorName={shownName}
         notes={profile.quickNotes ?? []}
         onReload={load}
       />

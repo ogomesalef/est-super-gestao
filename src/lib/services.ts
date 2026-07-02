@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { displayName } from "./ambassador-name";
 import { calcAmountDue, currentMonthRef, isPartnershipActiveInMonth, monthRefFromDate, monthsBetween, normalizeHandle } from "./utils";
 
 export async function syncMonthlyRowsForAmbassador(ambassadorId: string) {
@@ -132,7 +133,7 @@ export async function getExecutiveSummary(monthRef?: string, program?: string) {
 
       return {
         id: a.id,
-        fullName: a.fullName,
+        fullName: displayName(a),
         program: a.program,
         modality: a.partnership?.modality,
         courseName: a.partnership?.courseName,

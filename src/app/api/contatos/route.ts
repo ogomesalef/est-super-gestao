@@ -24,6 +24,23 @@ export async function POST(req: Request) {
   }
 
   const handle = type === "instagram" ? normalizeHandle(handleRaw) : handleRaw;
+
+  if (type === "instagram") {
+    const existing = await prisma.contact.findFirst({
+      where: { vertical, instagram: handle },
+    });
+    if (existing) {
+      return NextResponse.json({
+        ok: true,
+        duplicate: true,
+        row: existing.id,
+        handle,
+        vertical,
+        type,
+      });
+    }
+  }
+
   const contact = await prisma.contact.create({
     data: {
       vertical,

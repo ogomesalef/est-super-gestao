@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  addSavedTestEmail,
-  loadSavedTestEmails,
-  removeSavedTestEmail,
-} from "@/lib/saved-test-emails";
+  addSavedRecipient,
+  loadSavedRecipients,
+  removeSavedRecipient,
+} from "@/lib/saved-recipients";
 
 type SavedEmailInputProps = {
   value: string;
@@ -33,7 +33,7 @@ export function SavedEmailInput({
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setSaved(loadSavedTestEmails());
+    setSaved(loadSavedRecipients());
   }, [refreshKey]);
 
   const query = value.trim().toLowerCase();
@@ -57,7 +57,7 @@ export function SavedEmailInput({
 
   function removeChip(email: string, e: React.MouseEvent) {
     e.stopPropagation();
-    setSaved(removeSavedTestEmail(email));
+    setSaved(removeSavedRecipient(email));
   }
 
   return (
@@ -144,7 +144,7 @@ export function SavedEmailInput({
 }
 
 export function rememberTestEmail(email: string) {
-  return addSavedTestEmail(email);
+  return addSavedRecipient(email);
 }
 
 function normalize(email: string) {

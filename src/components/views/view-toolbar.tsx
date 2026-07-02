@@ -18,6 +18,8 @@ import type {
   ViewType,
 } from "@/lib/view-system/types";
 import { VIEW_TYPE_LABELS } from "@/lib/view-system/types";
+import type { BoardColumnOption } from "@/components/views/board-column-picker";
+import { BoardColumnPicker } from "@/components/views/board-column-picker";
 import { Input, Select } from "@/components/ui";
 
 const VIEW_ICONS: Record<ViewType, typeof Table2> = {
@@ -38,6 +40,7 @@ export function ViewToolbar({
   onAddView,
   onUpdateView,
   onRemoveView,
+  boardColumnOptions,
 }: {
   views: SavedView[];
   activeView: SavedView;
@@ -48,6 +51,8 @@ export function ViewToolbar({
   onAddView: () => void;
   onUpdateView: (id: string, patch: Partial<SavedView>) => void;
   onRemoveView: (id: string) => void;
+  /** Opções de coluna quando a view é quadro (toggle visibilidade estilo Notion). */
+  boardColumnOptions?: BoardColumnOption[];
 }) {
   const SortIcon = activeView.sortDir === "desc" ? ArrowDownAZ : ArrowUpAZ;
 
@@ -194,6 +199,15 @@ export function ViewToolbar({
             ))}
           </Select>
         </div>
+
+        {activeView.type === "board" && boardColumnOptions && boardColumnOptions.length > 0 && (
+          <BoardColumnPicker
+            columns={boardColumnOptions}
+            hiddenKeys={activeView.hiddenGroups || []}
+            groupBy={activeView.groupBy}
+            onChange={(hiddenGroups) => onUpdateView(activeView.id, { hiddenGroups })}
+          />
+        )}
 
         <div className="flex items-center gap-2">
           <input
