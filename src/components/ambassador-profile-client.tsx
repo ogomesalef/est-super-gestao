@@ -718,7 +718,42 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
         {profile.monthlyControls.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum registro de entregas.</p>
         ) : (
-          <TableShell>
+          <>
+            <div className="space-y-3 lg:hidden">
+              {profile.monthlyControls.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="w-full rounded-xl border border-hairline bg-card p-4 text-left shadow-soft hover:bg-surface/40"
+                  onClick={() => setMonthDeliveriesModal(c.monthRef)}
+                >
+                  <p className="font-medium capitalize text-primary">{formatMonthRefLong(c.monthRef)}</p>
+                  <p className="mt-1 text-sm tabular text-muted-foreground">{c.pctDelivered.toFixed(0)}% entregue</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Feed </span>
+                      {c.deliveredFeed}/{c.metaFeed}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Stories </span>
+                      {c.deliveredStories}/{c.metaStories}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">TikTok </span>
+                      {c.deliveredTiktok}/{c.metaTiktok}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">YouTube </span>
+                      {c.deliveredYoutube}/{c.metaYoutube}
+                    </div>
+                  </div>
+                  {c.proofsLink && (
+                    <p className="mt-2 text-xs text-primary">Comprovantes disponíveis</p>
+                  )}
+                </button>
+              ))}
+            </div>
+            <TableShell className="hidden lg:block">
             <TableHead>
               <TableRow>
                 <Th>Mês</Th>
@@ -791,7 +826,8 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
                 </TableRow>
               ))}
             </tbody>
-          </TableShell>
+            </TableShell>
+          </>
         )}
       </Card>
 

@@ -88,7 +88,55 @@ export function ExecutiveClient() {
         </Card>
       </div>
 
-      <TableShell>
+      <div className="space-y-3 lg:hidden">
+        {data.rows.map((r) => (
+          <div
+            key={r.id}
+            className={cn(
+              "rounded-xl border border-hairline bg-card p-4 shadow-soft",
+              verticalRowClass(r.program)
+            )}
+          >
+            <AmbassadorNameLink id={r.id} className="font-medium">
+              {r.fullName}
+            </AmbassadorNameLink>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <VerticalBadge vertical={r.program} />
+              <Badge>{r.paymentStatus}</Badge>
+            </div>
+            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Modalidade</dt>
+                <dd>{r.modality || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">% mês</dt>
+                <dd className="tabular">{r.pctDelivered.toFixed(0)}%</dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-xs text-muted-foreground">Curso / Cupom</dt>
+                <dd>
+                  {r.modality === "Remuneração"
+                    ? "—"
+                    : [r.courseName, r.couponCode].filter(Boolean).join(" / ") || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Valor acordado</dt>
+                <dd className="tabular">
+                  {r.modality === "Remuneração" ? `R$ ${r.agreedValue?.toFixed(2) ?? "—"}` : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Já recebeu</dt>
+                <dd className="tabular">R$ {r.paidTotal.toFixed(2)}</dd>
+              </div>
+            </dl>
+          </div>
+        ))}
+      </div>
+
+      <TableShell className="hidden lg:block">
         <TableHead>
           <TableRow>
             <Th>Nome</Th>

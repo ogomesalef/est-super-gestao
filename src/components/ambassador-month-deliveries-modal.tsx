@@ -285,7 +285,7 @@ export function AmbassadorMonthDeliveriesModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-hairline bg-card shadow-elev"
+        className="flex max-h-[100dvh] sm:max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-hairline bg-card shadow-elev"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-hairline px-5 py-4">

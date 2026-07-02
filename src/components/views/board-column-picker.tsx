@@ -69,7 +69,7 @@ export function BoardColumnPicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-hairline bg-card p-2 shadow-elev">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-w-[calc(100vw-1rem)] rounded-lg border border-hairline bg-card p-2 shadow-elev sm:right-auto sm:w-56">
           <div className="mb-2 flex items-center justify-between px-1">
             <p className="text-xs font-semibold text-ink">Colunas do quadro</p>
             {hidden.size > 0 && (

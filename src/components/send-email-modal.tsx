@@ -131,7 +131,7 @@ export function SendEmailModal({
       onClick={onClose}
     >
       <div
-        className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-hairline bg-card shadow-elev"
+        className="mx-auto flex h-full max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-hairline bg-card shadow-elev sm:max-h-full"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 border-b border-hairline px-4 py-3 sm:px-5">
@@ -151,7 +151,7 @@ export function SendEmailModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-surface hover:text-ink"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-surface hover:text-ink"
               aria-label="Fechar"
             >
               <X className="h-5 w-5" />

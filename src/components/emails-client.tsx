@@ -275,7 +275,7 @@ export function EmailsClient() {
 
       <div
         className={cn(
-          "mx-auto max-w-lg space-y-3 rounded-xl border-2 bg-card p-4 shadow-soft",
+          "mx-auto w-full max-w-lg space-y-3 rounded-xl border-2 bg-card p-4 shadow-soft",
           vertical === "OAB" ? "border-oab/25" : "border-ecj/30"
         )}
       >

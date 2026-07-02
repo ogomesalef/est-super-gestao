@@ -192,7 +192,7 @@ export function ReportsGalleryCard({ item }: { item: AmbassadorReportIndexItem }
           <NotionPill kind="vertical">{item.program}</NotionPill>
           {item.modality ? <NotionPill kind="modality">{item.modality}</NotionPill> : null}
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
           <div className="rounded-lg bg-surface/80 px-2.5 py-2">
             <p className="text-muted-foreground">Entregas</p>
             <p className="mt-0.5 font-semibold tabular-nums text-ink">{item.deliveryCount}</p>

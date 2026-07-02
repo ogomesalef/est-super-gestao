@@ -28,7 +28,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/executive": BarChart3,
 };
 
-export function NavLinks({ user }: { user: SessionUser }) {
+export function NavLinks({ user, mobile = false }: { user: SessionUser; mobile?: boolean }) {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((i) => i.roles.includes(user.role));
 
@@ -42,7 +42,8 @@ export function NavLinks({ user }: { user: SessionUser }) {
             key={item.href}
             href={item.href}
             className={cn(
-              "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
+              "group relative flex items-center gap-3 rounded-md px-3 text-sm font-medium transition-all duration-200",
+              mobile ? "min-h-11 py-2.5" : "py-2",
               active ? "text-ink" : "text-muted-foreground hover:bg-surface hover:text-ink"
             )}
           >

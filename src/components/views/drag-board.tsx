@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { GripVertical } from "lucide-react";
+import { Select } from "@/components/ui";
+import { useIsBelowLg } from "@/hooks/use-is-mobile";
 import { groupHeaderColor } from "@/lib/status-colors";
 import { reorderGroupKeys, resolveGroupOrder } from "@/lib/view-system/group-order";
 import type { GroupByKey } from "@/lib/view-system/types";
@@ -25,10 +27,45 @@ type DragBoardProps<T> = {
   onColumnOrderChange?: (order: string[]) => void;
   onItemDrop?: (itemId: string, columnKey: string) => void;
   getItemId: (item: T) => string;
-  renderCard: (item: T, ctx: { dragging: boolean }) => ReactNode;
+  renderCard: (item: T, ctx: { dragging: boolean; isTouch: boolean }) => ReactNode;
   columnClassName?: string;
   columnWidth?: string;
 };
+
+function MobileMoveSelect({
+  currentKey,
+  options,
+  onMove,
+}: {
+  currentKey: string;
+  options: { key: string; label: string }[];
+  onMove: (key: string) => void;
+}) {
+  if (options.length <= 1) return null;
+
+  return (
+    <div className="mt-2 border-t border-hairline/60 pt-2" data-no-drag>
+      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Mover para
+      </label>
+      <Select
+        value={currentKey}
+        onChange={(e) => {
+          const next = e.target.value;
+          if (next !== currentKey) onMove(next);
+        }}
+        className="h-9 text-xs"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {options.map((o) => (
+          <option key={o.key} value={o.key}>
+            {o.label}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}
 
 export function DragBoard<T>({
   groups,
@@ -43,6 +80,7 @@ export function DragBoard<T>({
   columnClassName,
   columnWidth = "w-72",
 }: DragBoardProps<T>) {
+  const isTouch = useIsBelowLg();
   const [dragItemId, setDragItemId] = useState<string | null>(null);
   const [dragColumnKey, setDragColumnKey] = useState<string | null>(null);
   const [dragOverColumnKey, setDragOverColumnKey] = useState<string | null>(null);
@@ -75,6 +113,15 @@ export function DragBoard<T>({
     return orderedGroups.filter((g) => !hidden.has(g.key));
   }, [orderedGroups, hiddenColumnKeys]);
 
+  const moveOptions = useMemo(
+    () =>
+      visibleGroups.map((g) => ({
+        key: g.key,
+        label: g.label || g.key,
+      })),
+    [visibleGroups]
+  );
+
   function handleColumnDrop(targetKey: string) {
     if (!dragColumnKey || dragColumnKey === targetKey) return;
     const currentOrder = visibleGroups.map((g) => g.key);
@@ -90,6 +137,9 @@ export function DragBoard<T>({
     setDragItemId(null);
   }
 
+  const dragEnabled = !!onItemDrop && !isTouch;
+  const columnDragEnabled = !!onColumnOrderChange && !isTouch;
+
   return (
     <div className="space-y-2">
       {visibleGroups.length === 0 && (
@@ -98,7 +148,7 @@ export function DragBoard<T>({
           quer ver.
         </p>
       )}
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
       {visibleGroups.map((group) => {
         const label = group.label || group.key;
         const styleKey = group.styleAs || group.key;
@@ -108,25 +158,25 @@ export function DragBoard<T>({
           <div
             key={group.key}
             className={cn(
-              "shrink-0 rounded-xl bg-surface/60 p-2 transition-shadow",
-              columnWidth,
+              "shrink-0 snap-start rounded-xl bg-surface/60 p-2 transition-shadow",
+              isTouch ? "w-[85vw] max-w-sm" : columnWidth,
               columnClassName,
               isColumnTarget && "ring-2 ring-primary/40"
             )}
-            onDragOver={(e) => {
+            onDragOver={dragEnabled || columnDragEnabled ? (e) => {
               e.preventDefault();
               setDragOverColumnKey(group.key);
-            }}
-            onDragLeave={() => {
+            } : undefined}
+            onDragLeave={dragEnabled || columnDragEnabled ? () => {
               if (dragOverColumnKey === group.key) setDragOverColumnKey(null);
-            }}
-            onDrop={(e) => {
+            } : undefined}
+            onDrop={dragEnabled || columnDragEnabled ? (e) => {
               e.preventDefault();
               const col = e.dataTransfer.getData(COLUMN_MIME);
               if (col) handleColumnDrop(group.key);
               else handleItemDrop(group.key);
               setDragOverColumnKey(null);
-            }}
+            } : undefined}
           >
             <div
               className={cn(
@@ -134,24 +184,26 @@ export function DragBoard<T>({
                 dragColumnKey === group.key && "opacity-60"
               )}
             >
-              <button
-                type="button"
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData(COLUMN_MIME, group.key);
-                  e.dataTransfer.effectAllowed = "move";
-                  setDragColumnKey(group.key);
-                }}
-                onDragEnd={() => {
-                  setDragColumnKey(null);
-                  setDragOverColumnKey(null);
-                }}
-                className="cursor-grab rounded p-0.5 text-muted-foreground hover:bg-surface hover:text-ink active:cursor-grabbing"
-                title="Arrastar coluna"
-                aria-label={`Reordenar coluna ${label}`}
-              >
-                <GripVertical className="h-4 w-4" />
-              </button>
+              {columnDragEnabled && (
+                <button
+                  type="button"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(COLUMN_MIME, group.key);
+                    e.dataTransfer.effectAllowed = "move";
+                    setDragColumnKey(group.key);
+                  }}
+                  onDragEnd={() => {
+                    setDragColumnKey(null);
+                    setDragOverColumnKey(null);
+                  }}
+                  className="flex min-h-9 min-w-9 cursor-grab items-center justify-center rounded text-muted-foreground hover:bg-surface hover:text-ink active:cursor-grabbing"
+                  title="Arrastar coluna"
+                  aria-label={`Reordenar coluna ${label}`}
+                >
+                  <GripVertical className="h-4 w-4" />
+                </button>
+              )}
               <span
                 className={cn(
                   "rounded px-2 py-0.5 text-xs font-semibold",
@@ -170,20 +222,26 @@ export function DragBoard<T>({
                 return (
                   <div
                     key={id}
-                    draggable={!!onItemDrop}
-                    onDragStart={(e) => {
-                      if (!onItemDrop) return;
+                    draggable={dragEnabled}
+                    onDragStart={dragEnabled ? (e) => {
                       e.dataTransfer.setData("text/plain", id);
                       e.dataTransfer.effectAllowed = "move";
                       setDragItemId(id);
-                    }}
-                    onDragEnd={() => setDragItemId(null)}
+                    } : undefined}
+                    onDragEnd={dragEnabled ? () => setDragItemId(null) : undefined}
                     className={cn(
-                      onItemDrop && "cursor-grab active:cursor-grabbing",
+                      dragEnabled && "cursor-grab active:cursor-grabbing",
                       dragging && "opacity-50 ring-2 ring-primary/30"
                     )}
                   >
-                    {renderCard(item, { dragging })}
+                    {renderCard(item, { dragging, isTouch })}
+                    {isTouch && onItemDrop && (
+                      <MobileMoveSelect
+                        currentKey={group.key}
+                        options={moveOptions}
+                        onMove={(key) => onItemDrop(id, key)}
+                      />
+                    )}
                   </div>
                 );
               })}

@@ -13,25 +13,27 @@ export function EntregasNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mb-4 flex gap-1 rounded-lg border border-hairline bg-surface/50 p-1">
-      {TABS.map((tab) => {
-        const active =
-          tab.href === "/entregas" ? pathname === "/entregas" : pathname.startsWith(tab.href);
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              active
-                ? "bg-white text-ink shadow-hairline"
-                : "text-muted-foreground hover:bg-white/60 hover:text-ink"
-            )}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
+    <nav className="mb-4 overflow-x-auto rounded-lg border border-hairline bg-surface/50 p-1">
+      <div className="flex min-w-max gap-1">
+        {TABS.map((tab) => {
+          const active =
+            tab.href === "/entregas" ? pathname === "/entregas" : pathname.startsWith(tab.href);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                "whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                active
+                  ? "bg-white text-ink shadow-hairline"
+                  : "text-muted-foreground hover:bg-white/60 hover:text-ink"
+              )}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

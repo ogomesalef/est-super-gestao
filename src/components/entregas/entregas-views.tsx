@@ -171,7 +171,7 @@ export function EntregasTableView({
                         <Textarea
                           defaultValue={c.notes || ""}
                           onBlur={(e) => onSaveNotes(c.id, e.target.value)}
-                          className="min-w-[180px] text-xs"
+                          className="min-w-0 w-full text-xs sm:min-w-[180px]"
                         />
                       </Td>
                     </TableRow>
@@ -246,7 +246,7 @@ export function EntregasGalleryView({
                       </span>
                     </div>
                     <QuickNoteCardBadges notes={c.ambassador.quickNotes} />
-                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
                     <div>
                       <p className="font-medium text-ink">Feed</p>
                       {c.deliveredFeed}/{c.metaFeed}

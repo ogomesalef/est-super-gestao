@@ -783,7 +783,7 @@ export function ParceriasClient() {
               )}
 
               <p className="text-xs font-semibold uppercase text-muted-foreground">Metas mensais</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {(["metaFeed", "metaStories", "metaTiktok", "metaYoutube"] as const).map((field, i) => (
                   <div key={field}>
                     <label className="text-xs text-muted-foreground">

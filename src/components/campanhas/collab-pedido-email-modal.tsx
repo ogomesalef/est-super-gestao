@@ -126,7 +126,7 @@ export function CollabPedidoEmailModal({
     <>
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
         <div
-          className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-hairline bg-card p-5 shadow-soft"
+          className="max-h-[100dvh] sm:max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-hairline bg-card p-5 shadow-soft"
           role="dialog"
           aria-labelledby="collab-email-title"
         >

@@ -68,7 +68,7 @@ export function ContatoDetailModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-hairline bg-card p-6 shadow-elev"
+        className="max-h-[100dvh] sm:max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-hairline bg-card p-6 shadow-elev"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-2">

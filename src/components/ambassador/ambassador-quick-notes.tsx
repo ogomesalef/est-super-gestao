@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Pin, PinOff, StickyNote, Trash2, X } from "lucide-react";
+import { Check, MoreHorizontal, Pin, PinOff, StickyNote, Trash2, X } from "lucide-react";
 import { Button, Textarea } from "@/components/ui";
 import type { AmbassadorQuickNote } from "@/lib/ambassador-quick-notes";
 import { pinnedCardNotes } from "@/lib/ambassador-quick-notes";
@@ -165,17 +165,60 @@ export function QuickNoteContextTarget({
 }) {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [addOpen, setAddOpen] = useState<{ x: number; y: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actions = useQuickNoteActions(ambassadorId, onChanged);
+
+  function openMenuAt(x: number, y: number) {
+    setMenu({
+      x: Math.min(x, window.innerWidth - 200),
+      y: Math.min(y, window.innerHeight - 120),
+    });
+  }
 
   function openMenu(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    setMenu({ x: e.clientX, y: e.clientY });
+    openMenuAt(e.clientX, e.clientY);
+  }
+
+  function clearLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    if (!touch) return;
+    clearLongPress();
+    longPressTimer.current = setTimeout(() => {
+      openMenuAt(touch.clientX, touch.clientY);
+    }, 500);
   }
 
   return (
-    <div className={className} onContextMenu={openMenu}>
+    <div
+      className={cn("relative", className)}
+      onContextMenu={openMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={clearLongPress}
+      onTouchMove={clearLongPress}
+      onTouchCancel={clearLongPress}
+    >
       {children}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          openMenuAt(rect.right - 8, rect.bottom);
+        }}
+        className="absolute right-2 top-2 flex min-h-9 min-w-9 items-center justify-center rounded-md bg-white/90 text-muted-foreground shadow-hairline hover:bg-surface hover:text-ink lg:hidden"
+        aria-label="Ações de nota rápida"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
       {menu && (
         <>
           <div
@@ -328,7 +371,7 @@ export function QuickNotesFloatingPanel({
 
   if (!openNotes.length && !completedNotes.length && !addOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-30">
+      <div className="safe-bottom fixed bottom-6 right-6 z-30 max-w-[calc(100vw-2rem)]">
         <Button size="sm" onClick={() => setAddOpen(true)} className="shadow-elev">
           <StickyNote className="h-4 w-4" />
           Nota rápida
@@ -347,7 +390,7 @@ export function QuickNotesFloatingPanel({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-30 w-80 max-w-[calc(100vw-2rem)]">
+    <div className="safe-bottom fixed bottom-6 right-6 z-30 w-80 max-w-[calc(100vw-2rem)]">
       <div className="overflow-hidden rounded-xl border border-hairline bg-canvas/95 shadow-elev backdrop-blur-md">
         <div className="flex items-center justify-between gap-2 border-b border-hairline bg-card/80 px-3 py-2">
           <div className="flex items-center gap-2">

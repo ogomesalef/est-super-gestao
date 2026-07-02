@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { normalizeView } from "./apply-view";
 import type { GroupByKey, SavedView, ViewsState, ViewType } from "./types";
 
@@ -103,6 +103,14 @@ export function defaultViewsFor(databaseId: string): SavedView[] {
   return [createView("Tabela", "table", "none")];
 }
 
+function pickMobileDefaultViewId(views: SavedView[]): string {
+  const gallery = views.find((v) => v.type === "gallery");
+  if (gallery) return gallery.id;
+  const board = views.find((v) => v.type === "board");
+  if (board) return board.id;
+  return views[0].id;
+}
+
 function normalizeState(parsed: ViewsState, databaseId: string): ViewsState {
   const fallbackSort = databaseId === "entregas" || databaseId === "financeiro" ? "name" : "name";
   const views = parsed.views.map((v) => normalizeView(v, fallbackSort));
@@ -112,27 +120,36 @@ function normalizeState(parsed: ViewsState, databaseId: string): ViewsState {
   return { views, activeViewId };
 }
 
+function loadViewsState(databaseId: string): ViewsState {
+  const defaults = defaultViewsFor(databaseId);
+  if (typeof window === "undefined") {
+    return { views: defaults, activeViewId: defaults[0].id };
+  }
+  try {
+    const raw = localStorage.getItem(`super-views:${databaseId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw) as ViewsState;
+      if (parsed.views?.length && parsed.activeViewId) {
+        return normalizeState(parsed, databaseId);
+      }
+    }
+    if (window.matchMedia("(max-width: 639px)").matches) {
+      return { views: defaults, activeViewId: pickMobileDefaultViewId(defaults) };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { views: defaults, activeViewId: defaults[0].id };
+}
+
 export function useSavedViews(databaseId: string) {
   const storageKey = `super-views:${databaseId}`;
-  const defaults = defaultViewsFor(databaseId);
+  const defaults = useMemo(() => defaultViewsFor(databaseId), [databaseId]);
 
-  const [state, setState] = useState<ViewsState>({
-    views: defaults,
-    activeViewId: defaults[0].id,
-  });
+  const [state, setState] = useState<ViewsState>(() => loadViewsState(databaseId));
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ViewsState;
-        if (parsed.views?.length && parsed.activeViewId) {
-          setState(normalizeState(parsed, databaseId));
-        }
-      }
-    } catch {
-      /* ignore */
-    }
+    setState(loadViewsState(databaseId));
   }, [storageKey, databaseId]);
 
   function persist(next: ViewsState) {

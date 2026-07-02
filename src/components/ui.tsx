@@ -61,8 +61,8 @@ export function Button({
     danger: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
   };
   const sizes = {
-    sm: "h-8 px-3 text-xs",
-    md: "h-9 px-4 text-sm",
+    sm: "h-8 min-h-8 px-3 text-xs sm:min-h-8",
+    md: "h-9 min-h-11 px-4 text-sm sm:min-h-9",
   };
   return (
     <button
@@ -150,11 +150,30 @@ export function PageHeader({
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-serif text-ink">{title}</h1>
+      <div className="min-w-0">
+        <h1 className="text-xl font-serif text-ink sm:text-2xl">{title}</h1>
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {children}
     </div>
+  );
+}
+
+export function IconButton({
+  className,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-ink",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }

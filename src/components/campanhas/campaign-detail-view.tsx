@@ -51,7 +51,48 @@ function DeliveriesTable({
   }
 
   return (
-    <TableShell className="rounded-none border-0 shadow-none">
+    <>
+      <div className="space-y-3 p-4 lg:hidden">
+        {deliveries.map((d) => (
+          <div key={d.id} className="rounded-lg border border-hairline/80 bg-background p-4">
+            <p className="font-medium tabular">{formatDate(d.postedAt || d.submittedAt)}</p>
+            {d.postedAt && !sameCalendarDay(d.postedAt, d.submittedAt) && (
+              <p className="text-xs text-muted-foreground">enviado {formatDate(d.submittedAt)}</p>
+            )}
+            <div className="mt-2">
+              {d.ambassador ? (
+                showAmbassadorLinks ? (
+                  <AmbassadorNameLink id={d.ambassador.id}>
+                    <div>{d.ambassador.fullName}</div>
+                    <div className="text-xs font-normal text-muted-foreground">{d.ambassador.instagram}</div>
+                  </AmbassadorNameLink>
+                ) : (
+                  <>
+                    <div className="font-medium">{d.ambassador.fullName}</div>
+                    <div className="text-xs text-muted-foreground">{d.ambassador.instagram}</div>
+                  </>
+                )
+              ) : (
+                <>
+                  <div className="font-medium">{d.fullName || "—"}</div>
+                  <div className="text-xs text-muted-foreground">{d.instagram || "—"}</div>
+                </>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <NotionPill kind="modality">{d.typeGroup}</NotionPill>
+              <span className="text-xs text-muted-foreground">
+                Drive: {d.campaignDriveStatus || d.driveStatus || "—"}
+              </span>
+            </div>
+            <div className="mt-2">
+              <DeliveryLinkPills delivery={d} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <TableShell className="hidden rounded-none border-0 shadow-none lg:block">
       <TableHead>
         <TableRow>
           <Th>Data</Th>
@@ -101,6 +142,7 @@ function DeliveriesTable({
         ))}
       </tbody>
     </TableShell>
+    </>
   );
 }
 

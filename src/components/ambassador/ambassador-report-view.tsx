@@ -144,8 +144,57 @@ export function AmbassadorReportView({ data }: { data: AmbassadorReportPayload }
           {data.months.filter((m) => m.finance).length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum registro financeiro.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[36rem] text-sm">
+            <>
+              <div className="space-y-3 lg:hidden">
+                {data.months
+                  .filter((m) => m.finance)
+                  .map((m) => (
+                    <div
+                      key={m.finance!.id}
+                      className="rounded-lg border border-hairline/80 bg-background p-4"
+                    >
+                      <p className="font-medium capitalize text-ink">
+                        {formatMonthRefLong(m.finance!.monthRef)}
+                      </p>
+                      <div className="mt-2">
+                        <NotionPill kind="payment">{m.finance!.paymentStatus}</NotionPill>
+                      </div>
+                      <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <dt className="text-xs text-muted-foreground">%</dt>
+                          <dd className="tabular-nums">{m.finance!.pctDelivered.toFixed(0)}%</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Acordado</dt>
+                          <dd className="tabular-nums">{formatMoney(m.finance!.agreedValue)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">A pagar</dt>
+                          <dd className="tabular-nums font-medium">{formatMoney(m.finance!.amountDue)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Termo</dt>
+                          <dd>
+                            {m.finance!.termLink ? (
+                              <a
+                                href={m.finance!.termLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-primary hover:underline"
+                              >
+                                PDF
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  ))}
+              </div>
+              <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-hairline text-left text-xs text-muted-foreground">
                     <th className="pb-2 pr-4 font-medium">Mês</th>
@@ -190,7 +239,8 @@ export function AmbassadorReportView({ data }: { data: AmbassadorReportPayload }
                     ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
         </ReportCard>
       )}

@@ -1,4 +1,5 @@
 import { NavLinks } from "@/components/nav-links";
+import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { VerticalShell } from "@/components/vertical-shell";
 import type { SessionUser } from "@/lib/auth";
 import { Handshake, LogOut } from "lucide-react";
@@ -11,8 +12,8 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen bg-canvas bg-aurora-light">
-      <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-hairline bg-canvas/95 px-3 py-5 backdrop-blur-xl">
+    <div className="relative flex min-h-screen flex-col bg-canvas bg-aurora-light lg:flex-row">
+      <aside className="hidden h-screen w-56 shrink-0 flex-col border-r border-hairline bg-canvas/95 px-3 py-5 backdrop-blur-xl lg:flex">
         <div className="flex items-center gap-2 px-3 pb-5">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shadow-hairline">
             <Handshake className="h-4 w-4" />
@@ -33,7 +34,7 @@ export function AppShell({
           <form action="/api/auth/logout" method="POST" className="mt-2">
             <button
               type="submit"
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-destructive"
+              className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-destructive"
             >
               <LogOut className="h-4 w-4" /> Sair
             </button>
@@ -42,7 +43,8 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="mx-auto w-full max-w-6xl flex-1 overflow-auto px-4 py-6 md:px-8 md:py-8">
+        <MobileNavDrawer user={user} />
+        <main className="mx-auto w-full max-w-6xl flex-1 overflow-auto px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8">
           <VerticalShell>{children}</VerticalShell>
         </main>
       </div>
