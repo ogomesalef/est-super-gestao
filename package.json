@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "prisma generate && next dev",
     "build": "prisma generate && next build",
-    "vercel-build": "prisma generate && prisma db push --skip-generate && next build",
+    "vercel-build": "prisma generate && tsx scripts/migrate-turso-all.ts && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -24,7 +24,7 @@
     "db:migrate-ambassador-report-slug": "tsx --env-file=.env scripts/migrate-turso-ambassador-report-slug.ts",
     "db:migrate-contatos-parcerias": "tsx --env-file=.env scripts/migrate-turso-contatos-parcerias.ts",
     "db:migrate-respostas-sync": "tsx --env-file=.env scripts/migrate-turso-respostas-sync.ts",
-    "db:migrate-status-simplificados": "tsx --env-file=.env scripts/migrate-turso-status-simplificados.ts",
+    "db:migrate-all": "tsx scripts/migrate-turso-all.ts",
     "fix:contatos-trabalhando": "tsx --env-file=.env scripts/fix-contatos-trabalhando.ts",
     "seed:ambassador-reports": "tsx --env-file=.env scripts/seed-ambassador-report-slugs.ts",
     "share:amanda-pedido2": "tsx --env-file=.env scripts/share-amanda-pedido2.ts",
