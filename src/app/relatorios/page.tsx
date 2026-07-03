@@ -3,6 +3,8 @@ import { getReportsDashboardData } from "@/lib/reports-dashboard";
 import { AmbassadorReportsIndex } from "@/components/ambassador/ambassador-reports-index";
 import { ReportsDashboardPanel } from "@/components/ambassador/reports-dashboard-panel";
 
+export const dynamic = "force-dynamic";
+
 export default async function AmbassadorReportsPage() {
   const [items, dataAll, dataOab, dataEcj] = await Promise.all([
     getActiveAmbassadorReportIndex(),
