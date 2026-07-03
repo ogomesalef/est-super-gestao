@@ -42,6 +42,7 @@
     "sync:entregas": "tsx --env-file=.env scripts/sync-entregas.ts",
     "sync:respostas": "tsx --env-file=.env scripts/sync-respostas.ts",
     "validate:respostas": "tsx --env-file=.env scripts/validate-respostas-sync.ts",
+    "setup:cloud-secrets": "tsx --env-file=.env scripts/setup-cloud-secrets.ts",
     "preview:respostas": "tsx --env-file=.env scripts/preview-respostas-headers.ts",
     "preview:entregas": "tsx --env-file=.env scripts/preview-entregas-sync.ts",
     "import:xlsx": "tsx scripts/import-xlsx.ts"
