@@ -1,8 +1,21 @@
 import { getActiveAmbassadorReportIndex } from "@/lib/ambassador-report";
+import { getReportsDashboardData } from "@/lib/reports-dashboard";
 import { AmbassadorReportsIndex } from "@/components/ambassador/ambassador-reports-index";
+import { ReportsDashboardPanel } from "@/components/ambassador/reports-dashboard-panel";
 
 export default async function AmbassadorReportsPage() {
-  const items = await getActiveAmbassadorReportIndex();
+  const [items, dataAll, dataOab, dataEcj] = await Promise.all([
+    getActiveAmbassadorReportIndex(),
+    getReportsDashboardData("ALL"),
+    getReportsDashboardData("OAB"),
+    getReportsDashboardData("ECJ"),
+  ]);
+
+  const activeCounts = {
+    ALL: items.length,
+    OAB: items.filter((i) => i.program === "OAB").length,
+    ECJ: items.filter((i) => i.program === "ECJ").length,
+  };
 
   return (
     <div className="min-h-screen bg-canvas bg-aurora-light">
@@ -22,7 +35,19 @@ export default async function AmbassadorReportsPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        <AmbassadorReportsIndex items={items} />
+        <ReportsDashboardPanel
+          dataByProgram={{ ALL: dataAll, OAB: dataOab, ECJ: dataEcj }}
+          activeCounts={activeCounts}
+        />
+        <div className="mt-10 space-y-4">
+          <div>
+            <h2 className="font-serif text-lg text-ink">Embaixadores</h2>
+            <p className="text-sm text-muted-foreground">
+              Clique em um card para ver o relatório individual
+            </p>
+          </div>
+          <AmbassadorReportsIndex items={items} />
+        </div>
       </main>
 
       <footer className="border-t border-hairline py-6 text-center text-xs text-muted-foreground">
