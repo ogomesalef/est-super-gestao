@@ -60,7 +60,7 @@ export function DashboardClient() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card title="Candidatos para analisar" className="border-amber-200/80 bg-amber-50/30">
             <p className="text-3xl font-bold tabular text-amber-950">{stats.needsReview}</p>
-            <Link href="/parcerias" className="text-sm text-amber-900 hover:underline">
+            <Link href="/contatos" className="text-sm text-amber-900 hover:underline">
               Ver em Parcerias
             </Link>
           </Card>
@@ -72,14 +72,14 @@ export function DashboardClient() {
                   ? "linhas novas aguardando sync"
                   : "conecte Google Sheets em Parcerias"}
               </p>
-              <Link href="/parcerias" className="text-sm text-amber-900 hover:underline">
+              <Link href="/contatos" className="text-sm text-amber-900 hover:underline">
                 Sincronizar candidaturas
               </Link>
             </Card>
           )}
           <Card title="Propostas sem retorno" className="border-orange-200/80 bg-orange-50/30">
             <p className="text-3xl font-bold tabular text-orange-950">{stats.staleProposals}</p>
-            <Link href="/parcerias" className="text-sm text-orange-900 hover:underline">
+            <Link href="/contatos" className="text-sm text-orange-900 hover:underline">
               Cobrar proposta
             </Link>
           </Card>
@@ -105,7 +105,7 @@ export function DashboardClient() {
           <p className={cn("text-3xl font-bold tabular", verticalTitleClass(vertical))}>
             {stats.actives}
           </p>
-          <Link href="/parcerias" className={cn("text-sm hover:underline", verticalTitleClass(vertical))}>
+          <Link href="/contatos" className={cn("text-sm hover:underline", verticalTitleClass(vertical))}>
             Ver parcerias
           </Link>
         </Card>

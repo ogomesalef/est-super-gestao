@@ -1,4 +1,10 @@
 import { VERTICAL_CONFIG } from "@/lib/constants";
+import {
+  AMBASSADOR_COMMISSION_TIERS,
+  ambassadorTermUrl,
+  commissionFromMonthlySales,
+  formatCommissionRate,
+} from "@/lib/ambassador-commission";
 
 function formatMoneyLocal(value: number): string {
   return (
@@ -101,9 +107,28 @@ function parseMoneyNumber(v: unknown): number {
 }
 
 function commission(total: number): number {
-  const tier = 10000;
-  if (total <= tier) return total * 0.2;
-  return tier * 0.2 + (total - tier) * 0.15;
+  return commissionFromMonthlySales(total);
+}
+
+function buildCommissionTiersHtml(accent: string): string {
+  const items = AMBASSADOR_COMMISSION_TIERS.map(
+    (tier) =>
+      `<li style="margin:3px 0;">${tier.label}: <strong>${formatCommissionRate(tier.rate)}</strong></li>`
+  ).join("");
+  return `<ul style="margin:6px 0 0 14px;padding:0;color:#344054;">${items}</ul>`;
+}
+
+function buildTermLinkHtml(program: string, accent: string): string {
+  const url = ambassadorTermUrl(program);
+  return `
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eef2f7;">
+      <a href="${url}" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${accent};text-decoration:none;font-weight:700;">
+        Consultar Termo de Adesão do Programa de Embaixadores
+      </a>
+      <div style="margin-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.45;color:#667085;">
+        Cupom, comissões por faixa, produtos elegíveis e demais regras do programa.
+      </div>
+    </div>`;
 }
 
 function obsBlock(text: string, accent: string): string {
@@ -131,10 +156,12 @@ export function buildPropostaIncludedBlock(opts: {
   courseDescription?: string;
   courseUrl?: string;
   careerUrl?: string;
+  simulationCourseName?: string;
   productValue?: unknown;
 }): string {
   const t = getVerticalTheme(opts.program);
   const name = String(opts.courseName || "").trim();
+  const simName = name || String(opts.simulationCourseName || "").trim();
   const desc = String(opts.courseDescription || "").trim();
   const url = String(opts.courseUrl || "").trim();
   const career = String(opts.careerUrl || "").trim();
@@ -175,8 +202,8 @@ export function buildPropostaIncludedBlock(opts: {
         .join("")
     : "";
 
-  const simIntro = price && name
-    ? `Simulação considerando que o seu público usasse o cupom para comprar <strong>${esc(name)}</strong> (${formatMoneyLocal(price)}):`
+  const simIntro = price && simName
+    ? `Simulação considerando que o seu público usasse o cupom para comprar <strong>${esc(simName)}</strong> (${formatMoneyLocal(price)}):`
     : price
       ? `Simulação considerando compras com o cupom (${formatMoneyLocal(price)} por compra):`
       : "";
@@ -194,7 +221,7 @@ export function buildPropostaIncludedBlock(opts: {
           ${simRows}
         </table>
         <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#667085;margin-top:5px;line-height:1.4;">
-          * A comissão da 6ª compra considera duas faixas: 20% até R$ 10.000 e 15% sobre o restante. O cupom é válido para todos os cursos do ${esc(t.brand)}. Os valores reais variam conforme o produto utilizado.
+          * Simulação com o sistema de faixas mensais do termo (cada degrau calculado separadamente). O cupom vale para os produtos elegíveis do ${esc(t.brand)}. Valores reais variam conforme o produto utilizado.
         </div>
       </div>`
     : "";
@@ -213,18 +240,16 @@ export function buildPropostaIncludedBlock(opts: {
         <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#344054;line-height:1.55;">
           Você terá um cupom com o seu nome, válido para todos os cursos e assinaturas do ${esc(t.brand)}.
           <br/><br/>
-          A ideia é simples: você usa a plataforma, fala sobre ela no seu conteúdo do jeito que faz sentido pra você, e compartilha o cupom com o seu público. Quem quiser comprar usando o seu cupom ganha <strong>10% de desconto</strong>, e você recebe <strong>até 20% de comissão</strong> sobre cada compra feita com ele.
+          A ideia é simples: você usa a plataforma, fala sobre ela no seu conteúdo do jeito que faz sentido pra você, e compartilha o cupom com o seu público. Quem quiser comprar usando o seu cupom ganha <strong>10% de desconto</strong>, e você recebe <strong>comissão por faixas</strong> sobre o total de vendas com o cupom no mês — de <strong>20%</strong> a <strong>1,25%</strong>, conforme o volume.
         </div>
         <div style="margin-top:12px;padding:12px;border-radius:8px;background:#f8fafc;border:1px solid #eef2f7;">
           <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#111827;margin-bottom:6px;">Como funciona a comissão</div>
           <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#344054;">
-            Calculada por faixas sobre o total de compras feitas com o seu cupom no mês:
-            <ul style="margin:6px 0 0 14px;padding:0;color:#344054;">
-              <li style="margin:3px 0;">Até R$ 10.000 no mês: <strong>20%</strong></li>
-              <li style="margin:3px 0;">O que ultrapassar R$ 10.000: <strong>15%</strong></li>
-            </ul>
+            Calculada por faixas sobre o <strong>total de compras feitas com o seu cupom no mês</strong>:
+            ${buildCommissionTiersHtml(t.accent)}
             <div style="margin-top:5px;font-size:11px;color:#667085;">Cada faixa é calculada separadamente, como um sistema de degraus.</div>
           </div>
+          ${buildTermLinkHtml(opts.program, t.accent)}
         </div>
         ${simulation}
       </div>

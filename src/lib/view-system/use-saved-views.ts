@@ -39,13 +39,28 @@ export function defaultViewsFor(databaseId: string): SavedView[] {
   }
   if (databaseId === "contatos") {
     return [
-      createView("Pipeline", "board", "status"),
+      createView("Pipeline", "board", "status", {
+        filterStatus: "__pipeline__",
+        groupOrder: ["Novo", "Trabalhando", "Pendente", "Proposta"],
+      }),
+      createView("Prospecção", "board", "status", {
+        filterStatus: "__prospeccao__",
+        groupOrder: ["Novo", "Trabalhando"],
+      }),
+      createView("Candidaturas", "board", "status", {
+        filterStatus: "__candidaturas__",
+        groupOrder: ["Pendente", "Proposta"],
+      }),
+      createView("Desinteressados", "table", "none", {
+        filterStatus: "__desinteressado__",
+      }),
       createView("Refazer contato", "table", "status", {
         filterStatus: "__contactStale__",
         sortKey: "name",
       }),
-      createView("Tabela", "table", "status"),
-      createView("Cards", "gallery", "vertical"),
+      createView("Tabela", "table", "status", {
+        filterStatus: "__pipeline__",
+      }),
     ];
   }
   if (databaseId === "entregas-posts" || databaseId === "entregas-posts-v2") {
@@ -97,6 +112,13 @@ export function defaultViewsFor(databaseId: string): SavedView[] {
     return [
       createView("Tabela", "table", "none"),
       createView("Cards", "gallery", "modality"),
+      createView("Quadro", "board", "modality"),
+    ];
+  }
+  if (databaseId === "ativos") {
+    return [
+      createView("Cards", "gallery", "modality"),
+      createView("Lista", "table", "none"),
       createView("Quadro", "board", "modality"),
     ];
   }

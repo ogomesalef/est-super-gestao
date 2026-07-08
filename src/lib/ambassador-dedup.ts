@@ -27,46 +27,35 @@ export async function findContactByIg(vertical: string, instagram: string) {
   });
 }
 
-export async function findUnlinkedContactByIg(instagram: string, vertical?: string) {
+export async function findContactForPipelineLink(instagram: string, program?: string) {
   const ig = normalizeInstagram(instagram);
   if (!ig) return null;
-  return prisma.contact.findFirst({
-    where: {
-      instagram: ig,
-      ambassadorId: null,
-      ...(vertical ? { vertical } : {}),
-    },
-  });
-}
 
-export async function linkContactToAmbassador(contactId: string, ambassadorId: string) {
-  return prisma.contact.update({
-    where: { id: contactId },
-    data: { ambassadorId },
-  });
-}
+  const baseWhere = {
+    instagram: ig,
+    ambassadorId: null,
+    status: { in: ["Novo", "Trabalhando"] as string[] },
+  };
 
-export async function linkContactByInstagram(
-  program: string,
-  instagram: string,
-  ambassadorId: string
-): Promise<string | null> {
-  const contact = await findUnlinkedContactByIg(instagram, program);
-  if (!contact) return null;
-
-  const alreadyLinked = await prisma.contact.findFirst({
-    where: { ambassadorId },
-    select: { id: true },
-  });
-  if (alreadyLinked) return null;
-
-  try {
-    await linkContactToAmbassador(contact.id, ambassadorId);
-    return contact.id;
-  } catch {
-    return null;
+  if (program) {
+    const match = await prisma.contact.findFirst({
+      where: { ...baseWhere, vertical: program },
+      orderBy: { updatedAt: "desc" },
+    });
+    if (match) return match;
   }
+
+  return prisma.contact.findFirst({
+    where: baseWhere,
+    orderBy: { updatedAt: "desc" },
+  });
 }
+
+export async function findUnlinkedContactByIg(instagram: string, vertical?: string) {
+  return findContactForPipelineLink(instagram, vertical);
+}
+
+export { linkContactByInstagram } from "./candidaturas-link";
 
 export type UpsertCandidaturaInput = {
   program: string;

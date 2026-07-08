@@ -44,6 +44,7 @@ export function ViewToolbar({
   onUpdateView,
   onRemoveView,
   boardColumnOptions,
+  viewBadges,
 }: {
   views: SavedView[];
   activeView: SavedView;
@@ -55,6 +56,7 @@ export function ViewToolbar({
   onUpdateView: (id: string, patch: Partial<SavedView>) => void;
   onRemoveView: (id: string) => void;
   boardColumnOptions?: BoardColumnOption[];
+  viewBadges?: Record<string, number>;
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const SortIcon = activeView.sortDir === "desc" ? ArrowDownAZ : ArrowUpAZ;
@@ -65,6 +67,7 @@ export function ViewToolbar({
         {views.map((view) => {
           const Icon = VIEW_ICONS[view.type];
           const active = view.id === activeView.id;
+          const badge = viewBadges?.[view.id];
           return (
             <div key={view.id} className="group relative flex items-center">
               <button
@@ -79,6 +82,11 @@ export function ViewToolbar({
               >
                 <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" />
                 <span className="max-w-[9rem] truncate">{view.name}</span>
+                {badge != null && badge > 0 && (
+                  <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </button>
               {active && views.length > 1 && (
                 <button

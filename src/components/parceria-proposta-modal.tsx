@@ -4,8 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Input, Select } from "@/components/ui";
 import { SendEmailModal, type SendEmailConfirmPayload } from "@/components/send-email-modal";
 import { ApplicationFormSummary } from "@/components/parcerias/application-form-summary";
+import {
+  PropostaCourseFields,
+  emptyPropostaCourseFields,
+  type PropostaCourseFieldState,
+} from "@/components/proposta-course-fields";
 import { MODALITIES, resolvePropostaAction } from "@/lib/constants";
 import { instagramProfileUrl } from "@/lib/formalizacao-instagram-message";
+import {
+  mergePropostaCourses,
+  resolveDefaultCourse,
+  resolvePropostaCourseEmailVars,
+  type PropostaCourse,
+} from "@/lib/proposta-courses";
 import { buildParceriaOperationalHints } from "@/lib/parceria-form-preview";
 import { needsAnalysis } from "@/lib/partnership-alerts";
 import { ExternalLink, Loader2, X } from "lucide-react";
@@ -18,7 +29,12 @@ export type PropostaEmailVars = {
   metaStories: number;
   metaTiktok: number;
   metaYoutube: number;
+  courseName?: string;
+  courseUrl?: string;
+  courseDescription?: string;
+  careerUrl?: string;
   productValue?: number;
+  simulationCourseName?: string;
 };
 
 export function ParceriaPropostaModal({
@@ -43,6 +59,8 @@ export function ParceriaPropostaModal({
   const [metaStories, setMetaStories] = useState("0");
   const [metaTiktok, setMetaTiktok] = useState("0");
   const [metaYoutube, setMetaYoutube] = useState("0");
+  const [courseFields, setCourseFields] = useState<PropostaCourseFieldState>(emptyPropostaCourseFields());
+  const [catalogCourses, setCatalogCourses] = useState<PropostaCourse[]>([]);
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -61,16 +79,38 @@ export function ParceriaPropostaModal({
 
   const emailVars = useCallback((): PropostaEmailVars => {
     const value = agreedValue.trim() ? Number(agreedValue) : null;
+    const courseVars = resolvePropostaCourseEmailVars({
+      program: item?.program || "OAB",
+      courses: catalogCourses,
+      courseName: courseFields.courseName,
+      courseUrl: courseFields.courseUrl,
+      courseDescription: courseFields.courseDescription,
+      careerUrl: courseFields.careerUrl,
+      productValue: courseFields.productValue,
+      includeRecommended: courseFields.includeRecommended,
+    });
     return {
       modality,
-      agreedValue: value,
+      agreedValue: isRemuneracao ? value : null,
       metaFeed: Number(metaFeed) || 0,
       metaStories: Number(metaStories) || 0,
       metaTiktok: Number(metaTiktok) || 0,
       metaYoutube: Number(metaYoutube) || 0,
-      productValue: value ?? undefined,
+      ...courseVars,
+      ...(isRemuneracao && value != null ? { productValue: undefined } : {}),
     };
-  }, [modality, agreedValue, metaFeed, metaStories, metaTiktok, metaYoutube]);
+  }, [
+    modality,
+    agreedValue,
+    metaFeed,
+    metaStories,
+    metaTiktok,
+    metaYoutube,
+    courseFields,
+    catalogCourses,
+    item?.program,
+    isRemuneracao,
+  ]);
 
   const loadPreview = useCallback(async () => {
     if (!item) return;
@@ -90,7 +130,12 @@ export function ParceriaPropostaModal({
             metaStories: vars.metaStories,
             metaTiktok: vars.metaTiktok,
             metaYoutube: vars.metaYoutube,
+            courseName: vars.courseName,
+            courseUrl: vars.courseUrl,
+            courseDescription: vars.courseDescription,
+            careerUrl: vars.careerUrl,
             productValue: vars.productValue,
+            simulationCourseName: vars.simulationCourseName,
           },
         }),
       });
@@ -122,17 +167,36 @@ export function ParceriaPropostaModal({
     setMetaStories(String(p?.metaStories ?? 0));
     setMetaTiktok(String(p?.metaTiktok ?? 0));
     setMetaYoutube(String(p?.metaYoutube ?? 0));
+    setCourseFields({
+      ...emptyPropostaCourseFields(),
+      courseName: p?.courseName || "",
+      includeRecommended: Boolean(p?.courseName),
+    });
     setSubject("");
     setHtml("");
     setPreviewError(null);
     setSendOpen(false);
-  }, [open, item, p?.modality, p?.agreedValue, p?.metaFeed, p?.metaStories, p?.metaTiktok, p?.metaYoutube]);
+    fetch("/api/proposta-courses")
+      .then((r) => r.json())
+      .then((data) => {
+        const courses = mergePropostaCourses(data.courses || []);
+        setCatalogCourses(courses);
+        const defaultCourse = resolveDefaultCourse(courses, item.program);
+        setCourseFields({
+          ...emptyPropostaCourseFields(),
+          courseName: p?.courseName || "",
+          includeRecommended: Boolean(p?.courseName),
+          productValue: String(defaultCourse.value),
+        });
+      })
+      .catch(() => setCatalogCourses(mergePropostaCourses([])));
+  }, [open, item, p?.modality, p?.agreedValue, p?.metaFeed, p?.metaStories, p?.metaTiktok, p?.metaYoutube, p?.courseName]);
 
   useEffect(() => {
     if (!open || !item) return;
     const timer = setTimeout(loadPreview, 200);
     return () => clearTimeout(timer);
-  }, [open, item, modality, agreedValue, metaFeed, metaStories, metaTiktok, metaYoutube, loadPreview]);
+  }, [open, item, modality, agreedValue, metaFeed, metaStories, metaTiktok, metaYoutube, courseFields, catalogCourses, loadPreview]);
 
   async function openSendModal() {
     await loadPreview();
@@ -218,6 +282,14 @@ export function ParceriaPropostaModal({
                         onChange={(e) => setAgreedValue(e.target.value)}
                       />
                     </label>
+                  )}
+
+                  {!isRemuneracao && (
+                    <PropostaCourseFields
+                      program={item.program}
+                      value={courseFields}
+                      onChange={setCourseFields}
+                    />
                   )}
 
                   <p className="text-xs font-semibold text-muted-foreground">Metas mensais</p>

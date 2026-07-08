@@ -523,7 +523,7 @@ export function AmbassadorProfileClient({ ambassadorId }: { ambassadorId: string
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link
-          href="/parcerias"
+          href="/contatos"
           className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-surface hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" />

@@ -4,6 +4,7 @@ import {
   getCandidaturasSyncStatus,
   syncCandidaturasFromSheets,
 } from "@/lib/candidaturas-sync";
+import { invalidateCandidaturasSyncCache } from "@/lib/sync-status-cache";
 import { isSheetsSyncConfigured } from "@/lib/google-sheets";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
     }
 
     const result = await syncCandidaturasFromSheets({ full });
+    invalidateCandidaturasSyncCache();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

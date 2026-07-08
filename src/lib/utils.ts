@@ -108,6 +108,13 @@ export function currentMonthRef(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+export function previousMonthRef(fromRef?: string): string {
+  const ref = fromRef || currentMonthRef();
+  const [y, m] = ref.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export function monthsBetween(start: Date, end: Date): string[] {
   const months: string[] = [];
   const cur = new Date(start.getFullYear(), start.getMonth(), 1);

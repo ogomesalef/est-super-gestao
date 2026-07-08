@@ -54,7 +54,7 @@ export async function recalcMonthlyControl(ambassadorId: string, monthRef: strin
   if (!ctrl) return;
 
   const deliveries = await prisma.delivery.findMany({
-    where: { ambassadorId, monthRef },
+    where: { ambassadorId, monthRef, campaignId: null },
   });
 
   const counts = countDeliveriesByType(deliveries);

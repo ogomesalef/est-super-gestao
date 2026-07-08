@@ -3,6 +3,8 @@ import path from "path";
 import { firstName, monthNameFromRef, parseDate } from "@/lib/utils";
 import { displayFirstName, displayName, legalName } from "@/lib/ambassador-name";
 import { VERTICAL_CONFIG } from "@/lib/constants";
+import { defaultCourseForProgram } from "@/lib/proposta-courses";
+import { ambassadorTermUrl, AMBASSADOR_TERMO_URL } from "@/lib/ambassador-commission";
 import { financeTeamCcHeader, financeTeamToHeader, verticalFromDisplay } from "@/lib/finance-recipients";
 import {
   buildBioFormalizacaoBlock,
@@ -33,10 +35,8 @@ export const EMAIL_THEME = {
   PLATAFORMA_ECJ: "https://cj.estrategia.com/todos-os-cursos",
   LINK_FORM_FIN:
     "https://docs.google.com/forms/d/e/1FAIpQLSdDOLhSNxsbHjgTCjhjovomWhFgu1nynhf1PSoZ7PIN-Z2ISw/viewform?fbzx=-6003903932834534796",
-  REGULAMENTO_OAB:
-    "https://drive.google.com/file/d/145BjCgWTeFH_xm9EDjzOowTz8XOEO5Ls/view",
-  REGULAMENTO_ECJ:
-    "https://drive.google.com/file/d/145BjCgWTeFH_xm9EDjzOowTz8XOEO5Ls/view",
+  REGULAMENTO_OAB: AMBASSADOR_TERMO_URL.OAB,
+  REGULAMENTO_ECJ: AMBASSADOR_TERMO_URL.ECJ,
 } as const;
 
 const AMBASSADOR_ACTION_TEMPLATES: Record<string, string> = {
@@ -432,7 +432,8 @@ export type AmbassadorLike = {
 
 export function buildAmbassadorTemplateData(
   ambassador: AmbassadorLike,
-  extra?: Record<string, string | number | undefined>
+  extra?: Record<string, string | number | undefined>,
+  action?: string
 ): Record<string, unknown> {
   const vertical = ambassador.program;
   const p = ambassador.partnership;
@@ -453,7 +454,18 @@ export function buildAmbassadorTemplateData(
     extra?.couponCode !== undefined
       ? String(extra.couponCode || "").trim()
       : String(p?.couponCode || "").trim();
-  const productValue = p?.agreedValue ?? extra?.productValue ?? extra?.valor;
+
+  const isPropostaAssinatura = action === "Enviar proposta (Assinatura + Cupom)";
+  const defaultCourse = defaultCourseForProgram(vertical);
+  let productValue: unknown = extra?.productValue ?? extra?.valor;
+  if ((productValue == null || productValue === "") && isPropostaAssinatura) {
+    productValue = defaultCourse.value;
+  } else if (productValue == null || productValue === "") {
+    productValue = p?.agreedValue;
+  }
+  const simulationCourseName = String(
+    extra?.simulationCourseName || extra?.courseName || cursoNome || (isPropostaAssinatura ? defaultCourse.name : "")
+  ).trim();
 
   const entregasOpts = {
     program: vertical,
@@ -491,15 +503,14 @@ export function buildAmbassadorTemplateData(
     mesEncerramento: cancellationMonthRef
       ? monthNameFromRef(cancellationMonthRef)
       : monthNameFromRef(new Date().toISOString().slice(0, 7)),
-    regulamentoLink:
-      vertical === "OAB" ? EMAIL_THEME.REGULAMENTO_OAB : EMAIL_THEME.REGULAMENTO_ECJ,
+    regulamentoLink: ambassadorTermUrl(vertical),
     accentSecondary,
     embaixadoresSectionBlock: buildEmbaixadoresSectionBlock(
       cupomCodigo,
       headerBg,
       accentSecondary,
       theme.verticalDisplay,
-      vertical === "OAB" ? EMAIL_THEME.REGULAMENTO_OAB : EMAIL_THEME.REGULAMENTO_ECJ
+      ambassadorTermUrl(vertical)
     ),
     includedPropostaBlock: buildPropostaIncludedBlock({
       program: vertical,
@@ -507,6 +518,7 @@ export function buildAmbassadorTemplateData(
       courseDescription: extra?.courseDescription as string | undefined,
       courseUrl: extra?.courseUrl as string | undefined,
       careerUrl: extra?.careerUrl as string | undefined,
+      simulationCourseName,
       productValue,
     }),
     entregasPropostaBlock: buildPropostaEntregasBlock(entregasOpts),
@@ -600,7 +612,7 @@ export function renderAmbassadorEmail(
   if (!fileName) {
     throw new Error(`Ação de e-mail desconhecida: ${action}`);
   }
-  const data = buildAmbassadorTemplateData(ambassador, extra);
+  const data = buildAmbassadorTemplateData(ambassador, extra, resolved);
   const subject = buildAmbassadorSubject(
     resolved,
     String(data.firstName),

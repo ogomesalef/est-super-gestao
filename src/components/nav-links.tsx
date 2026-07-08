@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,6 +12,7 @@ import {
   Megaphone,
   Package,
   Users,
+  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import { NAV_ITEMS } from "@/lib/constants";
@@ -20,7 +22,7 @@ import { cn } from "@/lib/utils";
 const ICONS: Record<string, LucideIcon> = {
   "/": LayoutDashboard,
   "/contatos": Users,
-  "/parcerias": Handshake,
+  "/ativos": UserCheck,
   "/entregas": Package,
   "/financeiro": BadgeDollarSign,
   "/campanhas": Megaphone,
@@ -31,12 +33,37 @@ const ICONS: Record<string, LucideIcon> = {
 export function NavLinks({ user, mobile = false }: { user: SessionUser; mobile?: boolean }) {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((i) => i.roles.includes(user.role));
+  const [contatosBadge, setContatosBadge] = useState(0);
+
+  useEffect(() => {
+    if (user.role !== "admin") return;
+    let cancelled = false;
+
+    function refreshBadge() {
+      fetch("/api/contatos/counts")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (!cancelled && data?.sidebarTotal != null) {
+            setContatosBadge(data.sidebarTotal);
+          }
+        })
+        .catch(() => {});
+    }
+
+    refreshBadge();
+    const timer = setInterval(refreshBadge, 5 * 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [user.role]);
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
       {items.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         const Icon = ICONS[item.href] || LayoutDashboard;
+        const badge = item.href === "/contatos" ? contatosBadge : 0;
         return (
           <Link
             key={item.href}
@@ -52,6 +79,11 @@ export function NavLinks({ user, mobile = false }: { user: SessionUser; mobile?:
             )}
             <Icon className={cn("relative z-10 h-4 w-4 shrink-0", active && "text-primary")} />
             <span className="relative z-10 truncate">{item.label}</span>
+            {badge > 0 && (
+              <span className="relative z-10 ml-auto rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )}
           </Link>
         );
       })}

@@ -20,6 +20,13 @@ export const MODALITIES = ["Assinatura + Cupom", "Remuneração"] as const;
 
 export const CONTACT_STATUSES = ["Novo", "Trabalhando", "Desinteressado"] as const;
 
+/** Colunas do pipeline unificado em Contatos. */
+export const PIPELINE_BOARD_STATUSES = ["Novo", "Trabalhando", "Pendente", "Proposta"] as const;
+
+export const PIPELINE_PROSPECCAO_STATUSES = ["Novo", "Trabalhando"] as const;
+
+export const PIPELINE_CANDIDATURA_STATUSES = ["Pendente", "Proposta"] as const;
+
 /** Status legados de contatos → status do app. */
 export const CONTACT_STATUS_ALIASES: Record<string, (typeof CONTACT_STATUSES)[number]> = {
   "Em contato": "Trabalhando",
@@ -191,7 +198,7 @@ export const VERTICAL_CONFIG = {
 export const NAV_ITEMS: Array<{ href: string; label: string; roles: Array<"admin" | "executive"> }> = [
   { href: "/", label: "Dashboard", roles: ["admin", "executive"] },
   { href: "/contatos", label: "Contatos", roles: ["admin"] },
-  { href: "/parcerias", label: "Parcerias", roles: ["admin"] },
+  { href: "/ativos", label: "Ativos", roles: ["admin", "executive"] },
   { href: "/entregas", label: "Entregas", roles: ["admin"] },
   { href: "/financeiro", label: "Financeiro", roles: ["admin"] },
   { href: "/campanhas", label: "Campanhas", roles: ["admin"] },

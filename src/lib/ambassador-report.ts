@@ -1,5 +1,6 @@
 import { generatePublicSlug } from "@/lib/campaign-public";
 import { displayName } from "@/lib/ambassador-name";
+import { resolveInstagramProfilePicUrl } from "@/lib/instagram-avatar-cache";
 import { instagramAvatarProxyPath } from "@/lib/instagram-avatar";
 import { prisma } from "@/lib/prisma";
 import { currentMonthRef } from "@/lib/utils";
@@ -15,6 +16,7 @@ export type ReportDelivery = {
   storiesPrintUrl: string | null;
   videoLink: string | null;
   driveOrganizedIn: string | null;
+  campaignId: string | null;
   campaignName: string | null;
 };
 
@@ -51,24 +53,24 @@ export type ReportMonthlyFinance = {
 export type ReportMonthBlock = {
   control: ReportMonthlyControl;
   finance: ReportMonthlyFinance | null;
-  deliveries: ReportDelivery[];
+  partnershipDeliveries: ReportDelivery[];
+  campaignDeliveries: ReportDelivery[];
 };
 
 export type AmbassadorReportPayload = {
   reportSlug: string;
   reportUrl: string;
+  currentMonthRef: string;
   ambassador: {
     id: string;
     program: string;
     fullName: string;
     socialName: string | null;
     displayName: string;
-    email: string | null;
-    whatsapp: string | null;
     instagram: string;
     tiktok: string | null;
     youtube: string | null;
-    status: string;
+    avatarUrl: string | null;
   };
   partnership: {
     modality: string | null;
@@ -83,23 +85,60 @@ export type AmbassadorReportPayload = {
     metaYoutube: number;
     startDate: string | null;
     endDate: string | null;
-    proposalSentAt: string | null;
-    formalizationSentAt: string | null;
-    legalCpf: string | null;
-    legalAddress: string | null;
-    bankDetails: string | null;
-  } | null;
+  };
   months: ReportMonthBlock[];
   totals: {
     totalPaid: number;
     totalPending: number;
     totalAgreed: number;
-    deliveryCount: number;
+    partnershipDeliveryCount: number;
+    campaignDeliveryCount: number;
   };
 };
 
+function serializeDelivery(d: {
+  id: string;
+  monthRef: string | null;
+  deliveryType: string | null;
+  postedAt: Date | null;
+  submittedAt: Date;
+  postLink: string | null;
+  printUrl: string | null;
+  storiesPrintUrl: string | null;
+  videoLink: string | null;
+  driveOrganizedIn: string | null;
+  campaignId: string | null;
+  campaignName: string | null;
+}): ReportDelivery {
+  return {
+    id: d.id,
+    monthRef: d.monthRef,
+    deliveryType: d.deliveryType,
+    postedAt: serializeDate(d.postedAt),
+    submittedAt: d.submittedAt.toISOString(),
+    postLink: d.postLink,
+    printUrl: d.printUrl,
+    storiesPrintUrl: d.storiesPrintUrl,
+    videoLink: d.videoLink,
+    driveOrganizedIn: d.driveOrganizedIn,
+    campaignId: d.campaignId,
+    campaignName: d.campaignName,
+  };
+}
+
+function isCampaignDelivery(d: { campaignId: string | null; campaignName: string | null }): boolean {
+  return Boolean(d.campaignId?.trim() || d.campaignName?.trim());
+}
+
 function serializeDate(d: Date | null | undefined): string | null {
   return d ? d.toISOString() : null;
+}
+
+export function isFormalizedActivePartnership(ambassador: {
+  status: string;
+  partnership: { formalizationSentAt: Date | null } | null;
+}): boolean {
+  return ambassador.status === "Ativo" && Boolean(ambassador.partnership?.formalizationSentAt);
 }
 
 export function ambassadorReportPath(slug: string): string {
@@ -176,31 +215,37 @@ export async function getAmbassadorReportBySlug(slug: string): Promise<Ambassado
     },
   });
 
-  if (!ambassador || ambassador.status !== "Ativo") return null;
+  if (!ambassador || !isFormalizedActivePartnership(ambassador) || !ambassador.partnership) {
+    return null;
+  }
 
   const reportSlug =
     ambassador.reportSlug || (await ensureAmbassadorReportSlug(ambassador.id, ambassador.instagram));
 
+  await resolveInstagramProfilePicUrl(ambassador.instagram);
+  const avatarUrl = instagramAvatarProxyPath(ambassador.instagram) || null;
+
   const financeByMonth = new Map(ambassador.monthlyFinances.map((f) => [f.monthRef, f]));
-  const deliveriesByMonth = new Map<string, ReportDelivery[]>();
+  const partnershipByMonth = new Map<string, ReportDelivery[]>();
+  const campaignByMonth = new Map<string, ReportDelivery[]>();
+
+  let partnershipDeliveryCount = 0;
+  let campaignDeliveryCount = 0;
 
   for (const d of ambassador.deliveries) {
     const monthRef = d.monthRef || "sem-mes";
-    const list = deliveriesByMonth.get(monthRef) || [];
-    list.push({
-      id: d.id,
-      monthRef: d.monthRef,
-      deliveryType: d.deliveryType,
-      postedAt: serializeDate(d.postedAt),
-      submittedAt: d.submittedAt.toISOString(),
-      postLink: d.postLink,
-      printUrl: d.printUrl,
-      storiesPrintUrl: d.storiesPrintUrl,
-      videoLink: d.videoLink,
-      driveOrganizedIn: d.driveOrganizedIn,
-      campaignName: d.campaignName,
-    });
-    deliveriesByMonth.set(monthRef, list);
+    const serialized = serializeDelivery(d);
+    if (isCampaignDelivery(d)) {
+      campaignDeliveryCount += 1;
+      const list = campaignByMonth.get(monthRef) || [];
+      list.push(serialized);
+      campaignByMonth.set(monthRef, list);
+    } else {
+      partnershipDeliveryCount += 1;
+      const list = partnershipByMonth.get(monthRef) || [];
+      list.push(serialized);
+      partnershipByMonth.set(monthRef, list);
+    }
   }
 
   const months: ReportMonthBlock[] = ambassador.monthlyControls.map((c) => {
@@ -236,7 +281,8 @@ export async function getAmbassadorReportBySlug(slug: string): Promise<Ambassado
             termSigned: f.termSigned,
           }
         : null,
-      deliveries: deliveriesByMonth.get(c.monthRef) || [],
+      partnershipDeliveries: partnershipByMonth.get(c.monthRef) || [],
+      campaignDeliveries: campaignByMonth.get(c.monthRef) || [],
     };
   });
 
@@ -259,46 +305,39 @@ export async function getAmbassadorReportBySlug(slug: string): Promise<Ambassado
   return {
     reportSlug,
     reportUrl: ambassadorReportUrl(reportSlug),
+    currentMonthRef: currentMonthRef(),
     ambassador: {
       id: ambassador.id,
       program: ambassador.program,
       fullName: ambassador.fullName,
       socialName: ambassador.socialName,
       displayName: displayName(ambassador),
-      email: ambassador.email,
-      whatsapp: ambassador.whatsapp,
       instagram: ambassador.instagram,
       tiktok: ambassador.tiktok,
       youtube: ambassador.youtube,
-      status: ambassador.status,
+      avatarUrl,
     },
-    partnership: p
-      ? {
-          modality: p.modality,
-          agreedValue: p.agreedValue,
-          courseName: p.courseName,
-          courseReleased: p.courseReleased,
-          courseReleaseDate: serializeDate(p.courseReleaseDate),
-          couponCode: p.couponCode,
-          metaFeed: p.metaFeed,
-          metaStories: p.metaStories,
-          metaTiktok: p.metaTiktok,
-          metaYoutube: p.metaYoutube,
-          startDate: serializeDate(p.startDate),
-          endDate: serializeDate(p.endDate),
-          proposalSentAt: serializeDate(p.proposalSentAt),
-          formalizationSentAt: serializeDate(p.formalizationSentAt),
-          legalCpf: p.legalCpf,
-          legalAddress: p.legalAddress,
-          bankDetails: p.bankDetails,
-        }
-      : null,
+    partnership: {
+      modality: p.modality,
+      agreedValue: p.agreedValue,
+      courseName: p.courseName,
+      courseReleased: p.courseReleased,
+      courseReleaseDate: serializeDate(p.courseReleaseDate),
+      couponCode: p.couponCode,
+      metaFeed: p.metaFeed,
+      metaStories: p.metaStories,
+      metaTiktok: p.metaTiktok,
+      metaYoutube: p.metaYoutube,
+      startDate: serializeDate(p.startDate),
+      endDate: serializeDate(p.endDate),
+    },
     months,
     totals: {
       totalPaid,
       totalPending,
       totalAgreed,
-      deliveryCount: ambassador.deliveries.length,
+      partnershipDeliveryCount,
+      campaignDeliveryCount,
     },
   };
 }
@@ -321,7 +360,10 @@ export async function getActiveAmbassadorReportIndex(): Promise<AmbassadorReport
   const monthRef = currentMonthRef();
 
   const ambassadors = await prisma.ambassador.findMany({
-    where: { status: "Ativo" },
+    where: {
+      status: "Ativo",
+      partnership: { is: { formalizationSentAt: { not: null } } },
+    },
     include: {
       partnership: true,
       monthlyControls: { where: { monthRef }, take: 1 },
@@ -333,6 +375,7 @@ export async function getActiveAmbassadorReportIndex(): Promise<AmbassadorReport
   const items: AmbassadorReportIndexItem[] = [];
 
   for (const a of ambassadors) {
+    if (!a.partnership) continue;
     const reportSlug = a.reportSlug || (await ensureAmbassadorReportSlug(a.id, a.instagram));
     const p = a.partnership;
 

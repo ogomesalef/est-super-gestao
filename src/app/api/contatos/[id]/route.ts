@@ -16,7 +16,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
     await prisma.ambassador.update({
       where: { id: amb.id },
-      data: { source: amb.source || "prospeccao" },
+      data: {
+        status: "Pendente",
+        needsReview: true,
+        source: amb.source || "prospeccao",
+      },
     });
     await prisma.contact.update({
       where: { id },

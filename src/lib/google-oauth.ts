@@ -13,7 +13,14 @@ export function googleOAuthCredentials() {
   return { clientId, clientSecret };
 }
 
+let tokenCache: { token: string; expiresAt: number } | null = null;
+
 export async function getGoogleAccessToken(): Promise<string> {
+  const now = Date.now();
+  if (tokenCache && now < tokenCache.expiresAt - 60_000) {
+    return tokenCache.token;
+  }
+
   const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
   const { clientId, clientSecret } = googleOAuthCredentials();
   if (!refreshToken || !clientId || !clientSecret) {
@@ -31,9 +38,18 @@ export async function getGoogleAccessToken(): Promise<string> {
     }),
   });
 
-  const data = (await res.json()) as { access_token?: string; error_description?: string };
+  const data = (await res.json()) as {
+    access_token?: string;
+    expires_in?: number;
+    error_description?: string;
+  };
   if (!data.access_token) {
     throw new Error(data.error_description || "Não foi possível renovar o token Google");
   }
+
+  tokenCache = {
+    token: data.access_token,
+    expiresAt: now + (data.expires_in ?? 3600) * 1000,
+  };
   return data.access_token;
 }

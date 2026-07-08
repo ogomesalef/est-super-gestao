@@ -5,6 +5,7 @@ import {
   FINANCE_PIPELINE_STAGES,
   MODALITIES,
   PARTNERSHIP_STATUSES,
+  PIPELINE_BOARD_STATUSES,
   POST_ASSIGNMENT_STATUSES,
   VERTICALS,
 } from "@/lib/constants";
@@ -23,7 +24,12 @@ export function boardColumnOptionsFor(
   const gb = effectiveBoardGroupBy(groupBy);
 
   if (databaseId === "contatos") {
-    if (gb === "status") return CONTACT_STATUSES.map((key) => ({ key }));
+    if (gb === "status") {
+      return [
+        ...PIPELINE_BOARD_STATUSES.map((key) => ({ key })),
+        { key: "Desinteressado" },
+      ];
+    }
     if (gb === "vertical") return VERTICALS.map((key) => ({ key }));
   }
 
@@ -60,6 +66,11 @@ export function boardColumnOptionsFor(
   if (databaseId === "campanhas") {
     if (gb === "status") return CAMPAIGN_STATUSES.map((key) => ({ key }));
     if (gb === "program") return ["OAB", "ECJ", "—"].map((key) => ({ key }));
+  }
+
+  if (databaseId === "ativos") {
+    if (gb === "modality") return MODALITIES.map((key) => ({ key }));
+    if (gb === "program") return VERTICALS.map((key) => ({ key }));
   }
 
   return undefined;

@@ -155,6 +155,9 @@ export async function POST(req: Request) {
             metaStories: Number(proposalData.metaStories ?? ambassador.partnership?.metaStories ?? 0),
             metaTiktok: Number(proposalData.metaTiktok ?? ambassador.partnership?.metaTiktok ?? 0),
             metaYoutube: Number(proposalData.metaYoutube ?? ambassador.partnership?.metaYoutube ?? 0),
+            ...(proposalData.courseName
+              ? { courseName: String(proposalData.courseName) }
+              : {}),
           },
         },
       },

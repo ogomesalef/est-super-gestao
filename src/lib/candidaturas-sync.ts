@@ -1,5 +1,9 @@
 import { prisma } from "./prisma";
-import { linkContactByInstagram } from "./ambassador-dedup";
+import {
+  ensureContactForFormAmbassador,
+  linkContactByInstagram,
+  resolveCrossProgramCandidacyDuplicate,
+} from "./candidaturas-link";
 import {
   fetchEntregasHeaders,
   fetchEntregasRowsFrom,
@@ -8,6 +12,7 @@ import {
   superSpreadsheetId,
 } from "./google-sheets";
 import { getRespostasSyncState, setRespostasSyncState } from "./respostas-sync-state";
+import { getCachedCandidaturasSyncStatus, invalidateCandidaturasSyncCache } from "./sync-status-cache";
 import {
   buildRespostasSheetSyncKey,
   parseRespostasSheetRow,
@@ -134,11 +139,28 @@ export async function upsertAmbassadorFromRespostas(
     ambassadorId = amb.id;
   }
 
-  const linkedContactId = await linkContactByInstagram(
+  let linkedContactId = await linkContactByInstagram(
     parsed.program,
     parsed.instagram,
     ambassadorId
   );
+
+  const fromForm =
+    opts.source === "formulario" ||
+    Boolean(opts.respostasSheetName?.startsWith("Respostas "));
+
+  if (!linkedContactId && fromForm) {
+    linkedContactId = await ensureContactForFormAmbassador(
+      ambassadorId,
+      parsed.program,
+      parsed.instagram,
+      parsed.tiktok
+    );
+  }
+
+  if (fromForm) {
+    await resolveCrossProgramCandidacyDuplicate(parsed.program, parsed.instagram, ambassadorId);
+  }
 
   return { ambassadorId, created, linkedContactId };
 }
@@ -200,6 +222,10 @@ export type CandidaturasSyncStatus = {
 };
 
 export async function getCandidaturasSyncStatus(): Promise<CandidaturasSyncStatus> {
+  return getCachedCandidaturasSyncStatus(fetchCandidaturasSyncStatus);
+}
+
+async function fetchCandidaturasSyncStatus(): Promise<CandidaturasSyncStatus> {
   const spreadsheetId = superSpreadsheetId();
   const configured = isSheetsSyncConfigured();
   const sheets: CandidaturasSyncStatus["sheets"] = [];
